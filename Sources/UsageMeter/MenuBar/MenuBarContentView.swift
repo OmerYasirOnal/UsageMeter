@@ -29,7 +29,15 @@ struct MenuBarContentView: View {
         .fixedSize(horizontal: false, vertical: true)
         .tint(Theme.accent)
         .preferredColorScheme(model.settings.appearance.colorScheme)
-        .task { await model.refresh() }
+        // Keep the data live *while the popover is open*: refresh on appear, then
+        // every 60s (the app's polite floor) until it closes. SwiftUI cancels this
+        // task when the view disappears, so we never poll in the background here.
+        .task {
+            while !Task.isCancelled {
+                await model.refresh()
+                try? await Task.sleep(for: .seconds(AppSettings.minimumIntervalSeconds))
+            }
+        }
     }
 
     // MARK: - Header
@@ -100,10 +108,14 @@ struct MenuBarContentView: View {
                 .contentTransition(.numericText())
                 .animation(.snappy, value: metric.displayPercent)
             UsageBar(percent: metric.percent, color: Theme.usageColor(metric.percent))
-            if let reset = Formatting.resetDescription(to: metric.resetsAt) {
-                Text("Resets \(reset)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            // Tick once a minute so the "Resets in 2h 8m" countdown stays live
+            // while the popover is open (matches the footer's "Updated" line).
+            TimelineView(.periodic(from: .now, by: 60)) { context in
+                if let reset = Formatting.resetDescription(to: metric.resetsAt, now: context.date) {
+                    Text("Resets \(reset)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }
@@ -192,8 +204,10 @@ struct MenuBarContentView: View {
             HStack {
                 metric(title: "Tokens", value: Formatting.tokens(block.totalTokens))
                 Spacer()
-                if let resets = Formatting.countdown(to: block.end) {
-                    metric(title: "Resets in", value: resets)
+                TimelineView(.periodic(from: .now, by: 60)) { context in
+                    if let resets = Formatting.countdown(to: block.end, now: context.date) {
+                        metric(title: "Resets in", value: resets)
+                    }
                 }
             }
         }
