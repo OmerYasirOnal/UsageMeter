@@ -17,3 +17,7 @@ usage-meter-prompt.md
 *.xcodeproj/xcuserdata/
 *.xcworkspace/xcuserdata/
 DerivedData/
+
+# Release artifacts
+UsageMeter-macOS.zip
+*.zip
