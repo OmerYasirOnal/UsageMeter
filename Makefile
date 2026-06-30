@@ -16,6 +16,12 @@ app:
 run:
 	./Scripts/make_app.sh --run
 
+# Generate the Xcode app target (for Mac App Store archiving). Needs XcodeGen
+# (brew install xcodegen). The SwiftPM build stays the source of truth for tests.
+xcodeproj:
+	xcodegen generate
+	@echo "✓ UsageMeter.xcodeproj generated — open in Xcode, set your Team, then Product ▸ Archive."
+
 # Launch with synthetic, PII-free data for screenshots.
 demo: app
 	@pkill -f "UsageMeter.app/Contents/MacOS/UsageMeter" 2>/dev/null || true

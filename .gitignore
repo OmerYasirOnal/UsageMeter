@@ -13,11 +13,14 @@ UsageMeter.app/
 .claude/
 usage-meter-prompt.md
 
-# Xcode (if a project is ever generated)
-*.xcodeproj/xcuserdata/
+# Xcode — the project is generated from project.yml via `make xcodeproj`
+*.xcodeproj
 *.xcworkspace/xcuserdata/
 DerivedData/
 
 # Release artifacts
 UsageMeter-macOS.zip
 *.zip
+
+# Xcode build output
+build/

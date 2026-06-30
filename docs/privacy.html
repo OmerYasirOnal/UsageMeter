@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UsageMeter — Privacy Policy</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 16px/1.65 -apple-system, system-ui, sans-serif; max-width: 720px;
+         margin: 0 auto; padding: 48px 22px 80px; color: #1c1c1e; }
+  @media (prefers-color-scheme: dark) { body { color: #e6e6ea; background: #16161a; } }
+  h1 { font-size: 1.9rem; letter-spacing: -0.02em; }
+  h2 { font-size: 1.15rem; margin-top: 2em; }
+  .accent { color: #d97757; }
+  .lead { font-size: 1.05rem; padding: 14px 16px; border-radius: 12px;
+          background: rgba(217,119,87,0.12); }
+  code { font-size: 0.9em; background: rgba(127,127,127,0.18); padding: 1px 5px; border-radius: 5px; }
+  a { color: #d97757; }
+  footer { margin-top: 3em; font-size: 0.85rem; opacity: 0.7; }
+</style>
+</head>
+<body>
+  <h1><span class="accent">UsageMeter</span> — Privacy Policy</h1>
+  <p><em>Last updated: 2026-06-30</em></p>
+
+  <p class="lead"><strong>UsageMeter does not collect, transmit, store on any server,
+  or share any of your data.</strong> No analytics, no telemetry, no tracking, no
+  third-party SDKs, no account on our side. Everything stays on your Mac.</p>
+
+  <h2>What UsageMeter reads (locally only)</h2>
+  <ul>
+    <li><strong>Claude Code logs</strong> (<code>~/.claude/projects</code>) — only
+      token counts, model names, timestamps, and request IDs. <strong>Never your
+      messages / conversation content.</strong></li>
+    <li><strong>Your claude.ai account</strong> (only if you log in) — only usage
+      percentages, reset times, and your own spend. <strong>Never conversation
+      content.</strong> We never see your password; only your session cookie is
+      stored locally, and <strong>Log out</strong> wipes it.</li>
+    <li><strong>Service status</strong> — Anthropic's public status page; no personal
+      data.</li>
+  </ul>
+
+  <h2>Where data lives</h2>
+  <p>Local caches in <code>~/Library/Application Support/UsageMeter/</code> (or the
+  sandboxed app's private container). <strong>None of it ever leaves your Mac.</strong></p>
+
+  <h2>Network access</h2>
+  <p>Only to <code>status.claude.com</code> (public) and — if you log in —
+  <code>claude.ai</code> (your own account). Nothing is sent to the developer or any
+  third party.</p>
+
+  <h2>Account integration note</h2>
+  <p>The claude.ai usage data comes from an unofficial, undocumented endpoint (the
+  same one the Usage page uses), accessed with your own login. Logging in is optional;
+  the app works fully without it.</p>
+
+  <h2>Data sale, ads, children</h2>
+  <p>No data is sold or shared (there is none), no ads, not directed at children. The
+  Mac App Store privacy label is <strong>"Data Not Collected."</strong></p>
+
+  <footer>
+    Questions: <a href="https://github.com/OmerYasirOnal/UsageMeter/issues">GitHub Issues</a>.
+    &middot; <a href="https://github.com/OmerYasirOnal/UsageMeter">Source code</a> (MIT).
+  </footer>
+</body>
+</html>

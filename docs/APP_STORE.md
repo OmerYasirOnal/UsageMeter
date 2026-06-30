@@ -82,6 +82,15 @@ repo root) to the Xcode app target's Signing & Capabilities.
 
 ## Phase 2 — Make it archivable in Xcode (~half day)
 
+**Status: ✅ done** — a `project.yml` (XcodeGen) is committed; run `make xcodeproj`
+(or `xcodegen generate`) to produce `UsageMeter.xcodeproj` with the app target,
+local `UsageMeterKit` dependency, `LSUIElement`, App-Sandbox entitlements, and
+`pricing.json` bundled. Verified it builds (`xcodebuild … BUILD SUCCEEDED`). The only
+manual step left is setting your **Development Team** in Signing & Capabilities, then
+**Product ▸ Archive**.
+
+<details><summary>How the project is set up (for reference)</summary>
+
 `Scripts/make_app.sh` hand-assembly can't produce an App Store package. You need an
 Xcode **App target** that can be archived:
 
@@ -97,12 +106,18 @@ Xcode **App target** that can be archived:
    `~/.claude` bookmark flow gets exercised).
 
 > Keep SwiftPM (`make test`) as the source of truth for the engine + CI; the Xcode
-> project is only the App Store shell. Commit the `.xcodeproj` (or a `project.yml`
-> for XcodeGen) so it's reproducible.
+> project is only the App Store shell. `project.yml` is committed; the generated
+> `.xcodeproj` is gitignored (regenerate with `make xcodeproj`).
+
+</details>
 
 ---
 
 ## Phase 3 — App Store Connect setup + privacy label (~half day)
+
+**Status: privacy policy ✅ done** — see [`PRIVACY.md`](../PRIVACY.md), published at
+`https://omeryasironal.github.io/UsageMeter/privacy.html` (GitHub Pages). Use it as
+the App Store "Privacy Policy URL" and declare **"Data Not Collected."**
 
 In **App Store Connect ▸ My Apps ▸ +**:
 

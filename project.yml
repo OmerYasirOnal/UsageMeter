@@ -1,0 +1,45 @@
+# XcodeGen spec for the Mac App Store / archivable app target.
+# Regenerate with:  xcodegen generate   (or: make xcodeproj)
+#
+# The SwiftPM package remains the source of truth for the engine + tests
+# (`swift test`). This Xcode project is only the App Store shell: it compiles the
+# app sources and links the local `UsageMeterKit` package product.
+name: UsageMeter
+
+options:
+  bundleIdPrefix: com.omeryasironal
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+packages:
+  UsageMeterKit:
+    path: .
+
+targets:
+  UsageMeter:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/UsageMeter
+      - path: Sources/UsageMeterKit/Resources/pricing.json
+        buildPhase: resources
+    dependencies:
+      - package: UsageMeterKit
+        product: UsageMeterKit
+    settings:
+      base:
+        PRODUCT_NAME: UsageMeter
+        PRODUCT_BUNDLE_IDENTIFIER: com.omeryasironal.usagemeter
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "6.0"
+        CODE_SIGN_ENTITLEMENTS: UsageMeter.entitlements
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSUIElement: YES
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        INFOPLIST_KEY_NSHumanReadableCopyright: "UsageMeter — local, privacy-first Claude usage meter. MIT licensed."
+        MACOSX_DEPLOYMENT_TARGET: "15.0"
+        ENABLE_HARDENED_RUNTIME: YES

@@ -48,6 +48,7 @@ make test      # 113 headless tests — no network or real data needed
 make run       # build UsageMeter.app and launch it
 make app       # just build ./UsageMeter.app
 make install   # build and copy to /Applications
+make xcodeproj # generate the Xcode app target for App Store archiving (needs XcodeGen)
 ```
 
 You can also open the package in Xcode: **File ▸ Open… ▸ `Package.swift`**.
@@ -87,6 +88,8 @@ entirely optional; the app is useful without it.
 - **Source A (account):** only usage percentages, reset times, and your own spend.
 - Local caches live in `~/Library/Application Support/UsageMeter/` and never leave
   your machine. "Log out" wipes the account session and discovery files.
+
+Full policy: [`PRIVACY.md`](PRIVACY.md) · [omeryasironal.github.io/UsageMeter/privacy.html](https://omeryasironal.github.io/UsageMeter/privacy.html)
 
 ## "API value" vs real spend
 
