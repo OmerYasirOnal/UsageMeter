@@ -1,0 +1,10 @@
+{
+  "page": { "id": "tymt9n04zgry", "name": "Claude", "url": "https://status.claude.com" },
+  "status": { "indicator": "none", "description": "All Systems Operational" },
+  "components": [
+    { "id": "rwppv331jlwc", "name": "claude.ai", "status": "operational" },
+    { "id": "k8w3r06qmzrp", "name": "Claude API (api.anthropic.com)", "status": "operational" }
+  ],
+  "incidents": [],
+  "scheduled_maintenances": []
+}

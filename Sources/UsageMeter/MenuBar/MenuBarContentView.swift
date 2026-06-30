@@ -1,0 +1,260 @@
+import SwiftUI
+import AppKit
+import UsageMeterKit
+
+/// The popover shown when the menu-bar item is clicked.
+struct MenuBarContentView: View {
+    @EnvironmentObject private var model: AppModel
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            header
+            if let account = model.snapshot.account, account.hasAnyMetric {
+                if let banner = limitBanner(account) { banner }
+                accountMetrics(account)
+            } else {
+                loggedOutAccount
+            }
+            Divider()
+            claudeCodeSection
+            if let block = model.snapshot.claudeCode.activeBlock {
+                blockSection(block)
+            }
+            Divider()
+            footer
+        }
+        .padding(16)
+        .frame(width: 340)
+        .fixedSize(horizontal: false, vertical: true)
+        .tint(Theme.accent)
+        .preferredColorScheme(model.settings.appearance.colorScheme)
+        .task { await model.refresh() }
+    }
+
+    // MARK: - Header
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 9) {
+                Image(systemName: "gauge.with.dots.needle.50percent")
+                    .font(.title3)
+                    .foregroundStyle(Theme.accent)
+                Text("UsageMeter").font(.headline)
+                Spacer()
+                iconButton("chart.bar.xaxis", help: "Open dashboard") { openDashboard() }
+                iconButton("gearshape", help: "Settings") { openSettingsWindow() }
+                iconButton("arrow.clockwise", help: "Refresh now") {
+                    Task { await model.refresh() }
+                }
+                .disabled(model.isRefreshing)
+            }
+            HStack(spacing: 5) {
+                Circle().fill(statusIndicator.color).frame(width: 7, height: 7)
+                Text(model.snapshot.status?.description ?? "Status unavailable")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+    }
+
+    private var statusIndicator: StatusIndicator {
+        model.snapshot.status?.indicator ?? .unknown
+    }
+
+    // MARK: - Account (Source A)
+
+    @ViewBuilder
+    private func accountMetrics(_ account: AccountUsage) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                SectionLabel(text: "Account")
+                Spacer()
+                Button("Log out") { Task { await model.logOut() } }
+                    .buttonStyle(.borderless)
+                    .font(.caption2)
+                    .foregroundStyle(Theme.accent)
+            }
+            if let session = account.session { accountMetric("Current Session", session) }
+            if let weekly = account.weekly { accountMetric("Weekly Limit", weekly) }
+            if let opus = account.weeklyOpus { accountMetric("Weekly Opus", opus) }
+            if let spend = account.spend {
+                HStack {
+                    Text("Pay-as-you-go used").font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    Text(Formatting.money(spend.usedAmount, currency: spend.currency))
+                        .font(.callout.weight(.semibold)).monospacedDigit()
+                }
+            }
+        }
+    }
+
+    private func accountMetric(_ title: String, _ metric: UsageMetric) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+            Text("\(metric.displayPercent)%")
+                .font(.system(size: 30, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(Theme.usageColor(metric.percent))
+                .contentTransition(.numericText())
+                .animation(.snappy, value: metric.displayPercent)
+            UsageBar(percent: metric.percent, color: Theme.usageColor(metric.percent))
+            if let reset = Formatting.resetDescription(to: metric.resetsAt) {
+                Text("Resets \(reset)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func limitBanner(_ account: AccountUsage) -> (some View)? {
+        let peak = account.peakPercent
+        if peak >= 75 {
+            let nearest = [account.session, account.weekly, account.weeklyOpus]
+                .compactMap { $0 }
+                .max(by: { $0.percent < $1.percent })
+            let resets = Formatting.resetDescription(to: nearest?.resetsAt)
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(Theme.warning)
+                Text(peak >= 90
+                     ? "You're close to a limit\(resets.map { " — resets \($0)" } ?? "")"
+                     : "Approaching a limit\(resets.map { " — resets \($0)" } ?? "")")
+                    .font(.caption)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .padding(10)
+            .background(Theme.warningSoft, in: RoundedRectangle(cornerRadius: Theme.corner, style: .continuous))
+        }
+    }
+
+    private var loggedOutAccount: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionLabel(text: "Account")
+            Button { openLogin() } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "person.crop.circle.badge.plus")
+                    Text("Log in to claude.ai").fontWeight(.semibold)
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption.weight(.semibold)).opacity(0.8)
+                }
+                .padding(.vertical, 9)
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity)
+                .background(Theme.accent, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .foregroundStyle(.white)
+            }
+            .buttonStyle(.plain)
+            Text("See your live session & weekly % — local-only until you log in.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: - Claude Code (Source B)
+
+    private var claudeCodeSection: some View {
+        let cc = model.snapshot.claudeCode
+        return VStack(alignment: .leading, spacing: 8) {
+            SectionLabel(text: "Claude Code — Today")
+            HStack {
+                metric(title: "Tokens", value: Formatting.tokens(cc.today.totalTokens))
+                Spacer()
+                if model.settings.showApiValue {
+                    metric(title: "API value", value: Formatting.cost(cc.todayEstimatedCost))
+                }
+            }
+            if cc.recordCount == 0 {
+                Text("No Claude Code usage yet. Run Claude Code, then refresh.")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if model.settings.showApiValue {
+                Text("\(cc.sessionCount) sessions · all-time ≈ \(Formatting.cost(cc.totalEstimatedCost)) API value")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("\(cc.sessionCount) sessions")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func blockSection(_ block: UsageBlock) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionLabel(text: "Current 5-hour block (local estimate)")
+            HStack {
+                metric(title: "Tokens", value: Formatting.tokens(block.totalTokens))
+                Spacer()
+                if let resets = Formatting.countdown(to: block.end) {
+                    metric(title: "Resets in", value: resets)
+                }
+            }
+        }
+    }
+
+    // MARK: - Footer
+
+    private var footer: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TimelineView(.periodic(from: .now, by: 60)) { context in
+                Text("Updated \(Formatting.relativeUpdated(model.snapshot.lastUpdated, now: context.date))")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            HStack(spacing: 8) {
+                Button { openDashboard() } label: {
+                    Label("Dashboard", systemImage: "chart.bar.xaxis")
+                }
+                Spacer()
+                Button("Quit") { NSApp.terminate(nil) }
+            }
+            .font(.callout)
+            Text("Privacy: only token counts, model, and timestamps are read — never your messages.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func iconButton(_ name: String, help: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: name)
+                .font(.system(size: 13, weight: .medium))
+                .frame(width: 26, height: 26)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .foregroundStyle(.secondary)
+        .help(help)
+    }
+
+    private func metric(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(value).font(.title3.weight(.semibold)).monospacedDigit()
+            Text(title).font(.caption2).foregroundStyle(.secondary)
+        }
+    }
+
+    private func openDashboard() {
+        openWindow(id: AppWindowID.dashboard)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func openLogin() {
+        openWindow(id: AppWindowID.accountLogin)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// In a menu-bar-only (accessory) app, `SettingsLink` can silently no-op
+    /// because the app isn't active — activate first, then send the action.
+    private func openSettingsWindow() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+    }
+}

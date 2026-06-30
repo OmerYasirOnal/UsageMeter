@@ -1,0 +1,24 @@
+{
+  "page": { "id": "tymt9n04zgry", "name": "Claude", "url": "https://status.claude.com" },
+  "status": { "indicator": "major", "description": "Partial Outage" },
+  "components": [
+    { "id": "k8w3r06qmzrp", "name": "Claude API (api.anthropic.com)", "status": "major_outage" }
+  ],
+  "incidents": [
+    {
+      "id": "inc_123",
+      "name": "Elevated error rates on the API",
+      "status": "investigating",
+      "impact": "major",
+      "shortlink": "https://stspg.io/abc123"
+    }
+  ],
+  "scheduled_maintenances": [
+    {
+      "id": "maint_9",
+      "name": "Scheduled database maintenance",
+      "status": "scheduled",
+      "impact": "maintenance"
+    }
+  ]
+}

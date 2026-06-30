@@ -1,0 +1,10 @@
+{
+  "_comment": "ESTIMATES ONLY — not an invoice. Rates are USD per 1,000,000 tokens. Verify current prices at https://www.anthropic.com/pricing and https://platform.claude.com/pricing before relying on cost figures. Cache-write tokens are billed at input_rate x 1.25 and cache-read tokens at input_rate x 0.10 (handled in CostCalculator). Models whose family is not listed here (incl. <synthetic> and local models) are reported as cost n/a. 'fable' and 'mythos' rates are placeholders pending official figures — verify them.",
+  "rates": {
+    "opus":   { "input": 15.0, "output": 75.0 },
+    "sonnet": { "input": 3.0,  "output": 15.0 },
+    "haiku":  { "input": 1.0,  "output": 5.0 },
+    "fable":  { "input": 5.0,  "output": 25.0 },
+    "mythos": { "input": 5.0,  "output": 25.0 }
+  }
+}

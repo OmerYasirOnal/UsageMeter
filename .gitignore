@@ -1,0 +1,19 @@
+# SwiftPM
+.build/
+.swiftpm/
+Package.resolved
+
+# Assembled app bundle (build artifact)
+UsageMeter.app/
+
+# macOS
+.DS_Store
+
+# Local tooling / internal build brief (not part of the product)
+.claude/
+usage-meter-prompt.md
+
+# Xcode (if a project is ever generated)
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
