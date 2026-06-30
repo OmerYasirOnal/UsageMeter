@@ -82,10 +82,12 @@ make xcodeproj  # generate the Xcode app target (needs XcodeGen)
 - **`make app` = ad-hoc, unsandboxed** (for GitHub download). The **Xcode/`project.yml`
   path is the sandboxed App Store target.** Two build paths on purpose.
 - **App icon is code-generated** — regenerate/tweak via `make icon` (edit
-  `Scripts/icon/render.swift`; the `gaugefill` case is the shipping concept). The
-  menu-bar glyph is still the SF Symbol `gauge.with.dots.needle` (same gauge family,
-  supports the live-% overlay) — a custom monochrome menu-bar template is an optional
-  follow-up, not done.
+  `Scripts/icon/render.swift`; the `gaugefill` case is the shipping concept).
+- **Menu-bar glyph is custom & vector** — `GaugeGlyph` (`Sources/UsageMeter/MenuBar/
+  GaugeGlyph.swift`) draws the same gauge as the app icon with a SwiftUI `Canvas`
+  (no asset catalog, scales crisply, tints to the usage/status color). Replaced the
+  old SF Symbol so the menu bar and icon read as one mark; still supports the live-%
+  text overlay. Its `value` param could later be driven by the live session %.
 - Login auto-close triggers on `auth.lastCaptured` (real usage capture), never while
   typing credentials.
 
@@ -94,8 +96,8 @@ make xcodeproj  # generate the Xcode app target (needs XcodeGen)
 1. **README screenshots** — Yasir captures demo (popover + dashboard); agent commits
    to `docs/screenshots/` and embeds in README. _(blocked on capture)_
 2. **Verify the Pages privacy URL is live.**
-3. ~~**App icon**~~ — ✅ **done** (code-generated `gaugefill`; `make icon`). Optional
-   follow-up: a custom monochrome menu-bar template image.
+3. ~~**App icon**~~ — ✅ **done** (code-generated `gaugefill`; `make icon`).
+   ~~Custom menu-bar glyph~~ — ✅ **done** (`GaugeGlyph`, vector `Canvas`, matches the icon).
 4. **Apple Developer Program ($99/yr)** — unlocks (a) **notarizing the GitHub
    download** (removes the scary Gatekeeper warning) and (b) App Store submission.
 5. **App Store scope decision** — local-only (recommended, clean approval) vs full

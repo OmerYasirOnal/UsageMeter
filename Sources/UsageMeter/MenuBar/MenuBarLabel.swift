@@ -11,7 +11,8 @@ struct MenuBarLabel: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: "gauge.with.dots.needle.50percent")
+            GaugeGlyph(tint: tint)
+                .frame(width: 18, height: 18)
             if let session = model.snapshot.account?.session {
                 Text("\(session.displayPercent)%").monospacedDigit()
             } else if model.settings.showCostInMenuBar {
