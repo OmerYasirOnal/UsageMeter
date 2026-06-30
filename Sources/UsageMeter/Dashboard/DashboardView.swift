@@ -8,7 +8,8 @@ import UsageMeterKit
 struct DashboardView: View {
     @EnvironmentObject private var model: AppModel
     @State private var range: DashboardRange = .days30
-    @State private var appeared = false
+    // Skip the fade-in for demo/screenshot rendering (ImageRenderer doesn't run .task).
+    @State private var appeared = DemoData.isEnabled
 
     private var allPoints: [DailyPoint] {
         DashboardMetrics.dailyPoints(from: model.snapshot.claudeCode)

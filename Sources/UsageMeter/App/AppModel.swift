@@ -49,6 +49,12 @@ final class AppModel: ObservableObject {
         }
         self.settings = initial
 
+        // Demo: populate synchronously so the UI (and screenshot renderer) has data immediately.
+        if DemoData.isEnabled {
+            self.snapshot = DemoData.snapshot()
+            self.hasLoadedOnce = true
+        }
+
         didFinishInit = true
 
         if initial.notificationsEnabled {
