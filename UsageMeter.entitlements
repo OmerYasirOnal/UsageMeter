@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  App Sandbox entitlements for the Mac App Store build (set on the Xcode app
+  target). The SwiftPM `make app` build is ad-hoc signed and NOT sandboxed, so
+  this file is not applied there — see docs/APP_STORE.md.
+
+  - app-sandbox: required by the Mac App Store.
+  - network.client: status page (Source C) + claude.ai account (Source A).
+  - files.user-selected.read-only + bookmarks.app-scope: lets the user grant
+    read access to ~/.claude via NSOpenPanel, persisted as a security-scoped
+    bookmark (see ClaudeFolderAccess.swift).
+-->
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <key>com.apple.security.files.user-selected.read-only</key>
+    <true/>
+    <key>com.apple.security.files.bookmarks.app-scope</key>
+    <true/>
+</dict>
+</plist>

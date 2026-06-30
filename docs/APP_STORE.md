@@ -66,9 +66,13 @@ A sandboxed app cannot read `~/.claude/projects` directly. The fix:
 <key>com.apple.security.files.bookmarks.app-scope</key>           <true/>
 ```
 
-Code touchpoints: new `BookmarkStore`; Settings button; wrap
-`ProjectScanner.scan`/`LocalClaudeCodeSource.refresh` in the security scope; adjust
-the default-roots empty state. The rest of the engine is unchanged.
+**Status: ✅ implemented** in `ClaudeFolderAccess.swift` (resolve/restore/request a
+security-scoped bookmark to `~/.claude`), wired into `AppModel` (the granted root is
+merged into the engine config) and Settings ("Grant access to ~/.claude…"). It's
+**additive**: the non-sandboxed build still reads `~/.claude/projects` directly, so
+nothing changes there; the grant only matters once the app is sandboxed.
+Remaining for the App Store target: add `UsageMeter.entitlements` (provided at the
+repo root) to the Xcode app target's Signing & Capabilities.
 
 > If you choose **Option A (local-only App Store build)**, you also gate out the
 > account login UI behind a compile flag (e.g. `#if APPSTORE`) so the submitted

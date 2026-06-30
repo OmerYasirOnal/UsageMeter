@@ -12,6 +12,7 @@ struct SettingsView: View {
     /// engine rescans.
     @State private var rootsText = ""
     @FocusState private var rootsFocused: Bool
+    @State private var folderGranted = ClaudeFolderAccess.isGranted
 
     var body: some View {
         Form {
@@ -38,6 +39,21 @@ struct SettingsView: View {
                     }
                     Spacer()
                 }
+
+                Divider()
+                HStack {
+                    if folderGranted {
+                        Label("Folder access granted", systemImage: "checkmark.seal.fill")
+                            .foregroundStyle(Theme.ok).font(.caption)
+                    } else {
+                        Button("Grant access to ~/.claude…") {
+                            Task { await model.grantClaudeFolderAccess(); folderGranted = ClaudeFolderAccess.isGranted }
+                        }
+                    }
+                    Spacer()
+                }
+                Text("Only needed for the sandboxed / Mac App Store build — the direct-download build reads ~/.claude automatically.")
+                    .font(.caption2).foregroundStyle(.secondary)
             }
 
             Section("Refresh") {

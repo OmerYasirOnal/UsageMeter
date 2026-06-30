@@ -24,6 +24,7 @@ final class AppModel: ObservableObject {
     private var didFinishInit = false
 
     init() {
+        ClaudeFolderAccess.restore()   // sandbox: reopen a previously-granted ~/.claude
         let loaded = AppSettings.load()
         let auth = AccountAuth()
         self.accountAuth = auth
@@ -39,7 +40,7 @@ final class AppModel: ObservableObject {
             }
         )
         self.engine = DataEngine(
-            configuration: loaded.engineConfiguration,
+            configuration: Self.mergedConfig(for: loaded),
             accountClient: accountClient
         )
 
@@ -92,6 +93,25 @@ final class AppModel: ObservableObject {
         notifier.evaluate(snapshot.account, enabled: settings.notificationsEnabled)
     }
 
+    /// Prompt for sandbox access to `~/.claude`, then reconfigure + refresh.
+    func grantClaudeFolderAccess() async {
+        guard ClaudeFolderAccess.requestAccess() else { return }
+        await engine.updateConfiguration(Self.mergedConfig(for: settings))
+        await refresh()
+    }
+
+    /// Engine roots = the security-scoped grant (if any) + the user's configured /
+    /// default roots, de-duplicated.
+    @MainActor
+    private static func mergedConfig(for settings: AppSettings) -> EngineConfiguration {
+        var roots = ClaudeFolderAccess.scanRoots()
+        roots.append(contentsOf: settings.engineConfiguration.projectRoots)
+        var seen = Set<String>()
+        roots = roots.filter { seen.insert($0.standardizedFileURL.path).inserted }
+        return EngineConfiguration(projectRoots: roots,
+                                   refreshInterval: settings.engineConfiguration.refreshInterval)
+    }
+
     func logOut() async {
         await accountAuth.logout()
         notifier.reset()
@@ -109,11 +129,12 @@ final class AppModel: ObservableObject {
         guard didFinishInit else { return }
         settings.save()
 
-        let newConfig = settings.engineConfiguration
-        let rootsChanged = newConfig.projectRoots != previous.engineConfiguration.projectRoots
+        let newConfig = Self.mergedConfig(for: settings)
+        let previousConfig = Self.mergedConfig(for: previous)
+        let rootsChanged = newConfig.projectRoots != previousConfig.projectRoots
         let intervalChanged = settings.refreshIntervalMinutes != previous.refreshIntervalMinutes
 
-        if newConfig != previous.engineConfiguration {
+        if newConfig != previousConfig {
             Task { await engine.updateConfiguration(newConfig) }
         }
         if rootsChanged {
