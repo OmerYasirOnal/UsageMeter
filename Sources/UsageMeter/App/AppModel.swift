@@ -68,6 +68,7 @@ final class AppModel: ObservableObject {
 
     /// Show cached values instantly, then do a live refresh and start the timer.
     func bootstrap() async {
+        if DemoData.isEnabled { snapshot = DemoData.snapshot(); hasLoadedOnce = true; return }
         snapshot = await engine.cachedSnapshot()
         hasLoadedOnce = true
         await refresh()
@@ -76,6 +77,7 @@ final class AppModel: ObservableObject {
 
     /// On-demand full refresh (also called when the popover opens / after login).
     func refresh() async {
+        if DemoData.isEnabled { snapshot = DemoData.snapshot(); hasLoadedOnce = true; return }
         guard !isRefreshing else { return }
         isRefreshing = true
         snapshot = await engine.refreshAll()

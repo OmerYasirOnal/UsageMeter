@@ -16,6 +16,12 @@ app:
 run:
 	./Scripts/make_app.sh --run
 
+# Launch with synthetic, PII-free data for screenshots.
+demo: app
+	@pkill -f "UsageMeter.app/Contents/MacOS/UsageMeter" 2>/dev/null || true
+	@USAGEMETER_DEMO=1 "$(CURDIR)/UsageMeter.app/Contents/MacOS/UsageMeter" >/dev/null 2>&1 &
+	@echo "✓ Demo launched — click the gauge in the menu bar, then 'Dashboard'. (Fake data.)"
+
 # Build and install into /Applications (so it lives like a normal app).
 install: app
 	rm -rf /Applications/UsageMeter.app
