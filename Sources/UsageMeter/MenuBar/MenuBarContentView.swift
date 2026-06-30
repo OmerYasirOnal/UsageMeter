@@ -173,9 +173,12 @@ struct MenuBarContentView: View {
                     .font(.caption2).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else if model.settings.showApiValue {
-                Text("\(cc.sessionCount) sessions · all-time ≈ \(Formatting.cost(cc.totalEstimatedCost)) API value")
-                    .font(.caption2).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(cc.sessionCount) sessions · all-time ≈ \(Formatting.cost(cc.totalEstimatedCost))")
+                    Text("“API value” isn’t money you’re billed — it’s what your tokens would cost at API rates.")
+                }
+                .font(.caption2).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("\(cc.sessionCount) sessions")
                     .font(.caption2).foregroundStyle(.secondary)

@@ -16,13 +16,16 @@ enum Formatting {
         }
     }
 
-    /// USD cost, or "n/a" when unpriced.
+    /// The Claude Code "API value" estimate (always USD — API rates are USD),
+    /// locale-formatted with grouping to match `money` (e.g. "$11.606,64"), or
+    /// "n/a" when unpriced. This is the value your tokens would cost on the API,
+    /// NOT money you're billed — see the popover/Settings copy.
     static func cost(_ value: Double?) -> String {
         guard let value else { return "n/a" }
         if value > 0 && value < 0.01 {
-            return "<$0.01"
+            return "<" + money(0.01, currency: "USD")
         }
-        return String(format: "$%.2f", value)
+        return money(value, currency: "USD")
     }
 
     /// Real money in the account's currency (e.g. "$0.00", "€3.20").
