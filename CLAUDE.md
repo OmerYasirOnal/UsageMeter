@@ -1,7 +1,13 @@
 # CLAUDE.md — UsageMeter project memory
 
 A native macOS **menu-bar app** that tracks Claude usage. Swift 6 + SwiftUI,
-menu-bar-only (`LSUIElement`), built with SwiftPM (no Xcode project file).
+menu-bar-only (`LSUIElement`), built with SwiftPM (+ an XcodeGen target for the App Store).
+
+> 📍 **Resuming?** Read [`docs/STATUS.md`](docs/STATUS.md) first — it has the current
+> state, the next-step TODO, and recommendations. **TL;DR:** M1+M2+M3 done,
+> open-sourced + released (github.com/OmerYasirOnal/UsageMeter, v0.1.0), App-Store-prepped
+> but **not submitted**. Next: README screenshots (capture demo via `make demo`),
+> then notarize the download / app icon / App Store. 113 tests pass.
 
 ## Architecture: three decoupled sources
 
