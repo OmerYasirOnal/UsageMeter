@@ -1,4 +1,4 @@
-.PHONY: build test app run clean release-app
+.PHONY: build test app run clean release-app icon xcodeproj demo install
 
 # Build the SwiftPM package (debug).
 build:
@@ -8,7 +8,11 @@ build:
 test:
 	swift test
 
-# Assemble UsageMeter.app (release) with a proper Info.plist (LSUIElement).
+# Regenerate the app icon from code (pure CoreGraphics → .icns + Assets.xcassets).
+icon:
+	./Scripts/make_icons.sh
+
+# Assemble UsageMeter.app (release) with a proper Info.plist (LSUIElement) + icon.
 app:
 	./Scripts/make_app.sh
 

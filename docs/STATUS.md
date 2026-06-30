@@ -5,7 +5,9 @@ _Last updated: 2026-06-30. Read this first when resuming in a new session._
 ## ⭐ Resume point (where we left off)
 
 The app is **feature-complete (M1 + M2 + M3)**, **open-sourced + released**, and
-**technically App-Store-prepped (not submitted)**. The immediate next step is:
+**technically App-Store-prepped (not submitted)**. ✅ **App icon now done** — a
+code-generated coral gauge (`gaugefill`), wired into both build paths (see
+"What's done"). The immediate next step is:
 
 > **Add screenshots to the README.** The demo (`make demo`, synthetic/PII-free data)
 > must be captured from a **real window** (Cmd-Shift-4 → Space → click). The agent
@@ -49,6 +51,16 @@ We deliberately have **not** submitted to the App Store yet — more polish firs
   additive (non-sandbox build unaffected); `UsageMeter.entitlements` provided.
 - **Xcode target** — `project.yml` (XcodeGen) → `make xcodeproj`; `xcodebuild`
   BUILD SUCCEEDED. Only manual step: set Development Team, then Archive.
+- **App icon** — `make icon` (`Scripts/make_icons.sh` + `Scripts/icon/render.swift`)
+  generates the icon **from code** with pure CoreGraphics (headless, no display):
+  a Claude-coral squircle + a bright filled gauge arc showing the consumption level
+  (concept `gaugefill`, chosen unanimously by a 4-lens design panel). Each size is
+  rendered **natively** so small sizes drop the track/needle and thicken the arc for
+  16px legibility. Outputs `Resources/AppIcon.icns` (used by `make app`) and
+  `Resources/Assets.xcassets/AppIcon.appiconset/` (used by the Xcode/App Store target,
+  `ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon`). Both build paths verified to embed
+  the icon (`make app` → `CFBundleIconFile`; `xcodebuild` → `Assets.car` +
+  `CFBundleIconName`).
 - **113 tests pass** (`make test`). App installed at `/Applications/UsageMeter.app`.
 
 ## Build / run cheatsheet
@@ -69,8 +81,11 @@ make xcodeproj  # generate the Xcode app target (needs XcodeGen)
   headless breaks SF Symbols + ScrollViews). Use a real window via `make demo`.
 - **`make app` = ad-hoc, unsandboxed** (for GitHub download). The **Xcode/`project.yml`
   path is the sandboxed App Store target.** Two build paths on purpose.
-- **No app icon yet** — App Store requires a 1024×1024 icon (currently uses an SF
-  Symbol in the menu bar only).
+- **App icon is code-generated** — regenerate/tweak via `make icon` (edit
+  `Scripts/icon/render.swift`; the `gaugefill` case is the shipping concept). The
+  menu-bar glyph is still the SF Symbol `gauge.with.dots.needle` (same gauge family,
+  supports the live-% overlay) — a custom monochrome menu-bar template is an optional
+  follow-up, not done.
 - Login auto-close triggers on `auth.lastCaptured` (real usage capture), never while
   typing credentials.
 
@@ -79,8 +94,8 @@ make xcodeproj  # generate the Xcode app target (needs XcodeGen)
 1. **README screenshots** — Yasir captures demo (popover + dashboard); agent commits
    to `docs/screenshots/` and embeds in README. _(blocked on capture)_
 2. **Verify the Pages privacy URL is live.**
-3. **App icon** — design/commit a 1024×1024 `AppIcon` asset (required for App Store;
-   nice for the menu bar too).
+3. ~~**App icon**~~ — ✅ **done** (code-generated `gaugefill`; `make icon`). Optional
+   follow-up: a custom monochrome menu-bar template image.
 4. **Apple Developer Program ($99/yr)** — unlocks (a) **notarizing the GitHub
    download** (removes the scary Gatekeeper warning) and (b) App Store submission.
 5. **App Store scope decision** — local-only (recommended, clean approval) vs full

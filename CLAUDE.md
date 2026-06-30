@@ -6,8 +6,9 @@ menu-bar-only (`LSUIElement`), built with SwiftPM (+ an XcodeGen target for the 
 > 📍 **Resuming?** Read [`docs/STATUS.md`](docs/STATUS.md) first — it has the current
 > state, the next-step TODO, and recommendations. **TL;DR:** M1+M2+M3 done,
 > open-sourced + released (github.com/OmerYasirOnal/UsageMeter, v0.1.0), App-Store-prepped
-> but **not submitted**. Next: README screenshots (capture demo via `make demo`),
-> then notarize the download / app icon / App Store. 113 tests pass.
+> but **not submitted**. App icon **done** (code-generated `gaugefill`; `make icon`).
+> Next: README screenshots (capture demo via `make demo`), then notarize the download /
+> App Store. 113 tests pass.
 
 ## Architecture: three decoupled sources
 
@@ -81,7 +82,10 @@ authenticated access is a **Terms-of-Service grey area**. Mitigations baked in:
 ## Build / run
 
 - `make test` → `swift test` (75 tests, headless, no network/real-data needed).
-- `make app`  → assembles `UsageMeter.app` (release) with a proper `Info.plist`.
+- `make app`  → assembles `UsageMeter.app` (release) with a proper `Info.plist` + icon.
+- `make icon` → regenerates the app icon **from code** (pure CoreGraphics, headless)
+  → `Resources/AppIcon.icns` + `Resources/Assets.xcassets/AppIcon.appiconset/`. Edit
+  the design in `Scripts/icon/render.swift` (shipping concept = the `gaugefill` case).
 - `make run`  → assembles and launches the menu-bar app.
 - Opens in Xcode 26 via `File ▸ Open` on `Package.swift`.
 

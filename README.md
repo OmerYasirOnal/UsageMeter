@@ -1,4 +1,8 @@
-# UsageMeter
+<p align="center">
+  <img src="docs/icon.png" width="128" height="128" alt="UsageMeter app icon — a coral gauge">
+</p>
+
+<h1 align="center">UsageMeter</h1>
 
 A small, fast, **native macOS menu-bar app** that means you never hit Claude
 limits unexpectedly — free and private, no subscription, no telemetry.
