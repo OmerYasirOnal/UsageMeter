@@ -83,14 +83,14 @@ import Foundation
 
     @Test func mixedModelBlockCostSumsPricedOnly() throws {
         let records = [
-            makeRecord(id: "o", model: "claude-opus-4-8", at: "2026-06-30T10:00:00.000Z", output: 1_000_000),   // $75
+            makeRecord(id: "o", model: "claude-opus-4-8", at: "2026-06-30T10:00:00.000Z", output: 1_000_000),   // $25
             makeRecord(id: "s", model: "claude-sonnet-4-6", at: "2026-06-30T10:30:00.000Z", output: 1_000_000), // $15
             makeRecord(id: "x", model: "<synthetic>", at: "2026-06-30T11:00:00.000Z", output: 1_000_000)        // n/a
         ]
         let blocks = builder().buildBlocks(from: records, now: TestTime.date("2026-06-30T12:00:00.000Z"))
         #expect(blocks.count == 1)
         let cost = try #require(blocks[0].estimatedCost)
-        #expect(abs(cost - 90.0) < 1e-9)
+        #expect(abs(cost - 40.0) < 1e-9)
         #expect(blocks[0].totalTokens == 3_000_000)
     }
 

@@ -6,11 +6,11 @@ import Foundation
     let calc = CostCalculator(pricing: .defaults)
 
     @Test func appliesFullCostModel() {
-        // opus = input 15 / output 75 per 1M.
+        // opus = input 5 / output 25 per 1M.
         let usage = TokenUsage(inputTokens: 100, cacheCreationTokens: 200,
                                cacheReadTokens: 1000, outputTokens: 50)
-        // 100*15 + 200*15*1.25 + 1000*15*0.10 + 50*75 = 1500 + 3750 + 1500 + 3750 = 10500
-        let expected = 10500.0 / 1_000_000.0
+        // 100*5 + 200*5*1.25 + 1000*5*0.10 + 50*25 = 500 + 1250 + 500 + 1250 = 3500
+        let expected = 3500.0 / 1_000_000.0
         let cost = calc.cost(usage: usage, family: .opus)
         #expect(cost != nil)
         #expect(abs((cost ?? 0) - expected) < 1e-12)
@@ -18,14 +18,14 @@ import Foundation
 
     @Test func cacheReadIsTenPercentOfInputRate() {
         let usage = TokenUsage(cacheReadTokens: 1_000_000)
-        // 1,000,000 * 15 * 0.10 / 1,000,000 = 1.5
-        #expect(abs((calc.cost(usage: usage, family: .opus) ?? 0) - 1.5) < 1e-9)
+        // 1,000,000 * 5 * 0.10 / 1,000,000 = 0.5
+        #expect(abs((calc.cost(usage: usage, family: .opus) ?? 0) - 0.5) < 1e-9)
     }
 
     @Test func cacheWriteIs125PercentOfInputRate() {
         let usage = TokenUsage(cacheCreationTokens: 1_000_000)
-        // 1,000,000 * 15 * 1.25 / 1,000,000 = 18.75
-        #expect(abs((calc.cost(usage: usage, family: .opus) ?? 0) - 18.75) < 1e-9)
+        // 1,000,000 * 5 * 1.25 / 1,000,000 = 6.25
+        #expect(abs((calc.cost(usage: usage, family: .opus) ?? 0) - 6.25) < 1e-9)
     }
 
     @Test func unknownFamilyIsNotApplicable() {
@@ -36,12 +36,12 @@ import Foundation
 
     @Test func totalCostSumsPricedAndIgnoresUnpriced() {
         let mixed: [ModelFamily: TokenUsage] = [
-            .opus: TokenUsage(outputTokens: 1_000_000),     // 75
+            .opus: TokenUsage(outputTokens: 1_000_000),     // 25
             .unknown: TokenUsage(outputTokens: 1_000_000)   // n/a, ignored
         ]
         let total = calc.totalCost(mixed)
         #expect(total != nil)
-        #expect(abs((total ?? 0) - 75.0) < 1e-9)
+        #expect(abs((total ?? 0) - 25.0) < 1e-9)
     }
 
     @Test func totalCostIsNilWhenEverythingUnpriced() {

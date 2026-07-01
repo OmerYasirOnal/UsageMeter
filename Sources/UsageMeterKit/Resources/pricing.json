@@ -1,10 +1,10 @@
 {
-  "_comment": "ESTIMATES ONLY — not an invoice. Rates are USD per 1,000,000 tokens. Verify current prices at https://www.anthropic.com/pricing and https://platform.claude.com/pricing before relying on cost figures. Cache-write tokens are billed at input_rate x 1.25 and cache-read tokens at input_rate x 0.10 (handled in CostCalculator). Models whose family is not listed here (incl. <synthetic> and local models) are reported as cost n/a. 'fable' and 'mythos' rates are placeholders pending official figures — verify them.",
+  "_comment": "ESTIMATES ONLY — not an invoice. Rates are USD per 1,000,000 tokens, verified 2026-07-02 against Anthropic's published prices (https://www.anthropic.com/pricing, https://platform.claude.com/pricing) — re-verify before relying on cost figures. Cache-write tokens bill at input_rate x 1.25 (5-min TTL) or x 2.0 (1-hour TTL); cache-read at input_rate x 0.10 (handled in CostCalculator). The table is family-granular: every version of a family gets the current rate, so legacy Opus <= 4.1 usage ($15/$75 era) is underestimated. Models whose family is not listed here (incl. <synthetic> and local models) are reported as cost n/a.",
   "rates": {
-    "opus":   { "input": 15.0, "output": 75.0 },
+    "opus":   { "input": 5.0,  "output": 25.0 },
     "sonnet": { "input": 3.0,  "output": 15.0 },
     "haiku":  { "input": 1.0,  "output": 5.0 },
-    "fable":  { "input": 5.0,  "output": 25.0 },
-    "mythos": { "input": 5.0,  "output": 25.0 }
+    "fable":  { "input": 10.0, "output": 50.0 },
+    "mythos": { "input": 10.0, "output": 50.0 }
   }
 }
