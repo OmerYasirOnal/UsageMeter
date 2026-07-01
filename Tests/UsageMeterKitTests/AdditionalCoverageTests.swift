@@ -332,3 +332,77 @@ final class CountingAccountClient: AccountUsageClient, @unchecked Sendable {
         return usage
     }
 }
+
+@Suite struct LocalClaudeCodeSourceRobustnessTests {
+    let fm = FileManager.default
+
+    private func makeRootAndStore() throws -> (root: URL, storeDir: URL) {
+        let root = fm.temporaryDirectory
+            .appendingPathComponent("um-src-\(UUID().uuidString)", isDirectory: true)
+            .resolvingSymlinksInPath()
+        let storeDir = fm.temporaryDirectory
+            .appendingPathComponent("um-src-store-\(UUID().uuidString)", isDirectory: true)
+        let session = root.appendingPathComponent("projA/s1.jsonl")
+        try fm.createDirectory(at: session.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let line = #"{"type":"assistant","requestId":"r1","timestamp":"2026-06-30T10:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":100}}}"#
+        try Data((line + "\n").utf8).write(to: session)
+        return (root, storeDir)
+    }
+
+    @Test func noOpRefreshDoesNotRewriteTheCacheFile() throws {
+        let (root, storeDir) = try makeRootAndStore()
+        defer { try? fm.removeItem(at: root); try? fm.removeItem(at: storeDir) }
+        let store = UsageStore(directory: storeDir)
+        let source = LocalClaudeCodeSource(store: store, pricing: .defaults)
+
+        _ = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_000))
+        let firstWrite = try Data(contentsOf: store.fileURL)
+
+        // Nothing on disk changed → the cache file must not be rewritten
+        // (a rewrite would at minimum change the persisted lastUpdated).
+        _ = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_060))
+        let secondWrite = try Data(contentsOf: store.fileURL)
+        #expect(firstWrite == secondWrite)
+    }
+
+    @Test func emptyScanWithNonEmptyCacheDoesNotWipeStats() throws {
+        let (root, storeDir) = try makeRootAndStore()
+        defer { try? fm.removeItem(at: root); try? fm.removeItem(at: storeDir) }
+        let store = UsageStore(directory: storeDir)
+        let source = LocalClaudeCodeSource(store: store, pricing: .defaults)
+
+        let seeded = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_000))
+        #expect(seeded.recordCount == 1)
+
+        // Root temporarily unavailable (sandbox bookmark failure, unmounted
+        // volume): the scan finds nothing. Stats and the persisted cache must
+        // survive rather than being wiped to zero.
+        let missing = fm.temporaryDirectory.appendingPathComponent("um-gone-\(UUID().uuidString)")
+        let afterOutage = source.refresh(roots: [missing], now: Date(timeIntervalSince1970: 1_800_000_060))
+        #expect(afterOutage.recordCount == 1)
+        #expect(afterOutage.total.outputTokens == 100)
+
+        let reloaded = UsageStore(directory: storeDir).load()
+        #expect(!reloaded.files.isEmpty)
+    }
+
+    @Test func genuineRemovalStillDropsRecords() throws {
+        // The wipe guard must not break normal removal semantics: when the scan
+        // still sees the root but one file is gone, its records are dropped.
+        let (root, storeDir) = try makeRootAndStore()
+        defer { try? fm.removeItem(at: root); try? fm.removeItem(at: storeDir) }
+        let extra = root.appendingPathComponent("projB/s2.jsonl")
+        try fm.createDirectory(at: extra.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let line = #"{"type":"assistant","requestId":"r2","timestamp":"2026-06-30T11:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":50}}}"#
+        try Data((line + "\n").utf8).write(to: extra)
+
+        let store = UsageStore(directory: storeDir)
+        let source = LocalClaudeCodeSource(store: store, pricing: .defaults)
+        let seeded = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_000))
+        #expect(seeded.recordCount == 2)
+
+        try fm.removeItem(at: extra)
+        let afterRemove = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_060))
+        #expect(afterRemove.recordCount == 1)
+    }
+}

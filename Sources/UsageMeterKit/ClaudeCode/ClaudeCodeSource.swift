@@ -48,6 +48,16 @@ public final class LocalClaudeCodeSource: ClaudeCodeSource, @unchecked Sendable 
 
     public func refresh(roots: [URL], now: Date) -> ClaudeCodeStats {
         let diff = scanner.diff(roots: roots, against: cache.stamps)
+
+        // Wipe guard: a scan that finds NOTHING while the cache has data means
+        // the roots are temporarily unreachable (sandbox bookmark failed to
+        // resolve, volume unmounted) — not that every session file vanished.
+        // Treating it as removal would zero all stats AND persist the wipe.
+        // Serve the cached aggregate; the next successful scan resyncs.
+        if diff.changed.isEmpty, diff.unchanged.isEmpty, !cache.files.isEmpty {
+            return aggregate(now: now)
+        }
+
         for path in diff.removedPaths {
             cache.files.removeValue(forKey: path)
         }
@@ -61,7 +71,11 @@ public final class LocalClaudeCodeSource: ClaudeCodeSource, @unchecked Sendable 
         }
         // Unchanged files keep their cached records.
         cache.lastUpdated = now
-        store.save(cache)
+        // Only rewrite the cache file when its contents actually changed —
+        // an unconditional save is a full multi-MB rewrite every tick.
+        if !diff.changed.isEmpty || !diff.removedPaths.isEmpty {
+            store.save(cache)
+        }
         return aggregate(now: now)
     }
 
