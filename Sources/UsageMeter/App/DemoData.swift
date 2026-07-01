@@ -1,11 +1,21 @@
 import Foundation
 import UsageMeterKit
 
-/// Synthetic, attractive, PII-free data for marketing screenshots.
-/// Enabled with the `USAGEMETER_DEMO=1` environment variable (see `make demo`).
+/// Synthetic, attractive, PII-free data for marketing screenshots and for
+/// previewing the app before there's any real Claude Code history.
+/// Enabled by the `USAGEMETER_DEMO=1` environment variable (see `make demo`) or
+/// the "Show sample data" Settings toggle.
 enum DemoData {
+    /// UserDefaults key backing the runtime "Show sample data" toggle. Kept next
+    /// to `isEnabled` so the gate and the persisted setting can't drift apart.
+    static let defaultsKey = "settings.showSampleData"
+
+    /// Sample mode is active when the screenshot env var is set OR the user turned
+    /// on "Show sample data" in Settings — read live so the toggle takes effect at
+    /// runtime (every demo call site goes through this single gate).
     static var isEnabled: Bool {
         ProcessInfo.processInfo.environment["USAGEMETER_DEMO"] == "1"
+            || UserDefaults.standard.bool(forKey: defaultsKey)
     }
 
     static func snapshot(now: Date = Date()) -> EngineSnapshot {

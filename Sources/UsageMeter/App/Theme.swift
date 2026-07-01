@@ -79,6 +79,27 @@ struct SectionLabel: View {
     }
 }
 
+/// A small, unmistakable banner shown wherever sample/preview data is displayed,
+/// so synthetic numbers can never be mistaken for real usage. Callers gate it on
+/// `DemoData.isEnabled`.
+struct SampleDataBanner: View {
+    var body: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "wand.and.stars")
+            Text("Sample data — for preview only")
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .font(.caption.weight(.medium))
+        .foregroundStyle(Theme.accent)
+        .padding(.vertical, 7)
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.accentSoft, in: RoundedRectangle(cornerRadius: Theme.corner, style: .continuous))
+        .accessibilityLabel("Sample data, for preview only")
+    }
+}
+
 /// A subtle rounded card container used across surfaces.
 struct CardBackground: ViewModifier {
     func body(content: Content) -> some View {

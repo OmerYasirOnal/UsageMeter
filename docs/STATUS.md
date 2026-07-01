@@ -1,21 +1,41 @@
 # Project Status & Handoff — UsageMeter
 
-_Last updated: 2026-06-30. Read this first when resuming in a new session._
+_Last updated: 2026-07-01. Read this first when resuming in a new session._
 
 ## ⭐ Resume point (where we left off)
 
-The app is **feature-complete (M1 + M2 + M3)**, **open-sourced + released**, and
-**technically App-Store-prepped (not submitted)**. ✅ **App icon now done** — a
-code-generated coral gauge (`gaugefill`), wired into both build paths (see
-"What's done"). The immediate next step is:
+**UsageMeter 0.2.0 (build 3) is SUBMITTED to the Mac App Store — state
+`WAITING_FOR_REVIEW`, submitted 2026-07-01 14:32 UTC.** We shipped the **local-only
+variant (Option A)**: the App Store build defines `APPSTORE`, which compiles out the
+claude.ai account (Source A) + WebKit (verified stripped via `otool -L`). A
+pre-submission multi-agent audit caught that the **full** account build (built +
+uploaded earlier as build 2) would almost certainly be rejected — Guideline **5.2.2**
+(automating the unofficial claude.ai endpoint, self-disclosed in the binary strings) +
+**2.3.1** (metadata/privacy label describe the local-only app, not the account binary).
+So we pivoted to local-only and **expired build 2** so it can't be submitted.
 
-> **Add screenshots to the README.** The demo (`make demo`, synthetic/PII-free data)
-> must be captured from a **real window** (Cmd-Shift-4 → Space → click). The agent
-> environment has no display access and `ImageRenderer` botches SF Symbols/ScrollViews
-> headlessly, so Yasir captures; the agent embeds into `docs/screenshots/` + README.
+> **Next:** wait for Apple's review result (~24–48 h; email to the account-holder
+> contact). Release is set to **auto-release after approval**. If rejected, the audit's
+> SHOULD-FIX list is the playbook (affiliation disclaimer already added). Loose ends:
+> branch **`appstore-local-only`** is pushed with a PR open into `main`; optional
+> per-submission contact info was left blank (needs a phone) so Apple defaults to the
+> account contact.
 
-We deliberately have **not** submitted to the App Store yet — more polish first
-(see TODO).
+### What was done for this submission (2026-07-01)
+- **Local-only build 3** — `SWIFT_ACTIVE_COMPILATION_CONDITIONS: APPSTORE`,
+  `ITSAppUsesNonExemptEncryption=NO`; app target renamed **`UsageMeterApp`** to fix a
+  scheme-name collision with the SwiftPM `.executable(name: "UsageMeter")` that had
+  produced an EMPTY archive (surfaced as export "Unknown Distribution Error").
+- **Runtime "Show sample data (preview)" toggle + banner** (Settings) so App Review
+  sees a populated dashboard on a data-less Mac — fixes the 2.1 empty-state rejection.
+  The demo gate now fires on the `USAGEMETER_DEMO` env var OR the persisted setting.
+- **App Store Connect** (app `6786227263`, version `23ab8b3b`, review submission
+  `f6f67f7d`): 2 local-only screenshots (dashboard + insights), description with the
+  "not affiliated with Anthropic" disclaimer, keywords (dropped `anthropic`), App
+  Review Notes, App Privacy = **Data Not Collected**, Age **4+**, Price **Free**,
+  Content Rights = No, Copyright, PrivacyInfo reason `0A2A.1`→`3B52.1`. Automated via
+  the ASC REST API (`scratchpad/asc.py`, key `93HFBMV3MA`) + Playwright for the
+  web-only forms (age rating, price, privacy).
 
 ## Links
 
@@ -106,9 +126,9 @@ make xcodeproj  # generate the Xcode app target (needs XcodeGen)
 5. ~~**App Store scope decision**~~ — ✅ **done: Option A (local-only).** `#if APPSTORE`
    compiles out Source A (verified: WebKit not linked); `PrivacyInfo.xcprivacy`
    bundled; listing copy in `docs/APP_STORE_LISTING.md`. GitHub build stays full A+B+C.
-6. **App Store Connect** — app record, category (Developer Tools), price Free, privacy
-   label **"Data Not Collected"**, screenshots, set Dev Team in Xcode → Archive →
-   upload → Submit. See `docs/APP_STORE.md`.
+6. ~~**App Store Connect** — app record, category, price, privacy label, screenshots,
+   Archive → upload → Submit~~ — ✅ **done: SUBMITTED 2026-07-01 (build 3, local-only),
+   `WAITING_FOR_REVIEW`.** Remaining: await review result; if approved it auto-releases.
 7. **Optional polish** — GRDB/SQLite migration (large history), accessibility pass,
    Turkish localization, broader real-world testing, in-app "what's new".
 

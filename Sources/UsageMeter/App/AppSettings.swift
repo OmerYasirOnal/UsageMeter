@@ -19,6 +19,10 @@ struct AppSettings: Equatable {
     var notificationsEnabled: Bool
     /// Color-scheme override.
     var appearance: AppAppearance
+    /// Show synthetic sample usage so the app can be previewed before there's any
+    /// real Claude Code history. Backs `DemoData.isEnabled` together with the
+    /// `USAGEMETER_DEMO` env var.
+    var showSampleData: Bool
 
     static let `default` = AppSettings(
         projectRootPaths: [],
@@ -28,7 +32,8 @@ struct AppSettings: Equatable {
         showPercentInMenuBar: true,
         showApiValue: true,
         notificationsEnabled: true,
-        appearance: .system
+        appearance: .system,
+        showSampleData: false
     )
 
     /// Minimum polite refresh interval (seconds) regardless of the chosen minutes.
@@ -58,6 +63,7 @@ struct AppSettings: Equatable {
         static let showApiValue = "settings.showApiValue"
         static let notifications = "settings.notificationsEnabled"
         static let appearance = "settings.appearance"
+        static let showSampleData = DemoData.defaultsKey   // shared with the demo gate
     }
 
     static func load(defaults: UserDefaults = .standard) -> AppSettings {
@@ -84,6 +90,7 @@ struct AppSettings: Equatable {
         if let raw = defaults.string(forKey: Keys.appearance), let a = AppAppearance(rawValue: raw) {
             settings.appearance = a
         }
+        settings.showSampleData = defaults.bool(forKey: Keys.showSampleData)
         return settings
     }
 
@@ -96,5 +103,6 @@ struct AppSettings: Equatable {
         defaults.set(showApiValue, forKey: Keys.showApiValue)
         defaults.set(notificationsEnabled, forKey: Keys.notifications)
         defaults.set(appearance.rawValue, forKey: Keys.appearance)
+        defaults.set(showSampleData, forKey: Keys.showSampleData)
     }
 }

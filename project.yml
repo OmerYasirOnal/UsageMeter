@@ -18,7 +18,14 @@ packages:
     path: .
 
 targets:
-  UsageMeter:
+  # NOTE: the Xcode app target is deliberately named "UsageMeterApp" (not
+  # "UsageMeter") to avoid a scheme-name collision with the SwiftPM package's
+  # `.executable(name: "UsageMeter")` product — that collision made
+  # `xcodebuild -scheme UsageMeter archive` build the package executable
+  # (SKIP_INSTALL, no .app) and produce an EMPTY archive, which surfaced as an
+  # "Unknown Distribution Error" at export time. The shipped product is still
+  # "UsageMeter.app" (PRODUCT_NAME below); only the target/scheme name differs.
+  UsageMeterApp:
     type: application
     platform: macOS
     sources:
@@ -36,18 +43,24 @@ targets:
         PRODUCT_NAME: UsageMeter
         PRODUCT_BUNDLE_IDENTIFIER: com.omeryasir.usagemeter
         MARKETING_VERSION: "0.2.0"
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: "3"
         SWIFT_VERSION: "6.0"
         CODE_SIGN_ENTITLEMENTS: UsageMeter.entitlements
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: "9X8FDSW5D8"   # Ömer Yasir Önal (Apple Distribution / App Store team)
         GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        # Local-only App Store build: compiles out the claude.ai login (Source A).
-        # The SwiftPM / GitHub build does NOT define APPSTORE → full A+B+C.
+        # Option A (chosen for the App Store): LOCAL-ONLY build (Sources B + C only).
+        # Defining APPSTORE #if-compiles-OUT the claude.ai account (Source A): the
+        # WKWebView login, cookie capture, and the unofficial-usage-endpoint replay.
+        # This is the App-Store-approvable variant (avoids the 5.2.2 / 2.3.1 / ToS
+        # rejections that shipping the full account build would trigger).
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) APPSTORE"
         INFOPLIST_KEY_LSUIElement: YES
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        # UsageMeter only uses standard HTTPS (exempt). Declaring this here means
+        # App Store Connect won't ask the export-compliance question on each build.
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         INFOPLIST_KEY_NSHumanReadableCopyright: "UsageMeter — local, privacy-first Claude usage meter. MIT licensed."
         MACOSX_DEPLOYMENT_TARGET: "15.0"
         ENABLE_HARDENED_RUNTIME: YES

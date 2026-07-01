@@ -6,7 +6,7 @@
   Store "Data Not Collected" nutrition label. The only "required reason" APIs used:
     • UserDefaults — the app's own settings (CA92.1).
     • File timestamps — read to decide which local logs changed (incremental scan);
-      only for files the user granted access to via NSOpenPanel (0A2A.1).
+      only for files/directories the user granted access to via NSOpenPanel (3B52.1).
 -->
 <plist version="1.0">
 <dict>
@@ -31,7 +31,7 @@
             <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
             <key>NSPrivacyAccessedAPITypeReasons</key>
             <array>
-                <string>0A2A.1</string>
+                <string>3B52.1</string>
             </array>
         </dict>
     </array>
