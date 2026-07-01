@@ -45,8 +45,10 @@ struct DashboardView: View {
         .preferredColorScheme(model.settings.appearance.colorScheme)
         .managesActivationPolicy()
         .task {
-            await model.refresh()
+            // Reveal immediately with cached data — don't stay blank while a slow
+            // refresh (log scan / network) runs.
             withAnimation(.easeOut(duration: 0.45)) { appeared = true }
+            await model.refresh()
         }
     }
 
