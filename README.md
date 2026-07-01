@@ -24,6 +24,22 @@ It tracks three independent things:
 
 ---
 
+## Download
+
+**[⬇️ Download the latest release](https://github.com/OmerYasirOnal/UsageMeter/releases/latest)** —
+grab `UsageMeter-macOS.zip`, unzip, and drag **UsageMeter.app** into your Applications folder.
+Look for the gauge icon in the menu bar.
+
+> **First launch:** the app is signed ad-hoc (not yet notarized), so macOS Gatekeeper
+> will warn on the first open. **Right-click the app → Open** once, or run
+> `xattr -dr com.apple.quarantine /Applications/UsageMeter.app`. A notarized build and
+> an App Store release are planned.
+
+Requires **macOS 15 (Sequoia) or later**. Prefer to build it yourself? See
+[Build, run & install](#build-run--install).
+
+---
+
 ## Features
 
 - 🎛 **Menu-bar popover** — live session / weekly / Opus % with progress bars, reset

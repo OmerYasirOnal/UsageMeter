@@ -33,7 +33,7 @@ targets:
       base:
         PRODUCT_NAME: UsageMeter
         PRODUCT_BUNDLE_IDENTIFIER: com.omeryasironal.usagemeter
-        MARKETING_VERSION: "0.1.0"
+        MARKETING_VERSION: "0.2.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "6.0"
         CODE_SIGN_ENTITLEMENTS: UsageMeter.entitlements
