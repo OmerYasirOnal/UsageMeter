@@ -126,8 +126,13 @@ public struct ProjectScanner: @unchecked Sendable {
 
         for file in current {
             currentPaths.insert(file.path)
+            // Sub-second tolerance: the persisted stamp round-trips through an
+            // ISO-8601 encoder that drops fractional seconds, while APFS mtimes
+            // are sub-second — exact equality would re-parse everything on every
+            // relaunch. A real modification moves the mtime by ≥ 1s or changes
+            // the size (and the next tick re-checks regardless).
             if let prev = previous[file.path],
-               prev.modifiedAt == file.modifiedAt,
+               abs(prev.modifiedAt.timeIntervalSince(file.modifiedAt)) < 1.0,
                prev.size == file.size {
                 diff.unchanged.append(file)
             } else {

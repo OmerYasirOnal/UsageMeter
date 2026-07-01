@@ -27,13 +27,13 @@ public struct Pricing: Sendable, Equatable {
     }
 
     /// Built-in defaults — kept in sync with `Resources/pricing.json`. These are
-    /// ESTIMATES; verify on Anthropic's official pricing page.
+    /// ESTIMATES (verified 2026-07-02); confirm on Anthropic's official pricing page.
     public static let defaults = Pricing(rates: [
-        .opus:   ModelRate(input: 15.0, output: 75.0),
+        .opus:   ModelRate(input: 5.0,  output: 25.0),
         .sonnet: ModelRate(input: 3.0,  output: 15.0),
         .haiku:  ModelRate(input: 1.0,  output: 5.0),
-        .fable:  ModelRate(input: 5.0,  output: 25.0),
-        .mythos: ModelRate(input: 5.0,  output: 25.0)
+        .fable:  ModelRate(input: 10.0, output: 50.0),
+        .mythos: ModelRate(input: 10.0, output: 50.0)
     ])
 
     /// On-disk shape of `pricing.json`.

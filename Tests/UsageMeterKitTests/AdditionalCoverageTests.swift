@@ -7,15 +7,17 @@ import Foundation
 @Suite struct ParserEdgeCaseTests {
     let parser = JSONLParser()
 
-    @Test func readsFlatCacheCreationAndIgnoresNestedObject() throws {
-        // We read the flat `cache_creation_input_tokens`. A nested `cache_creation`
-        // object (without the flat field) contributes 0 — documents intended behavior.
+    @Test func readsFlatCacheCreationAndFallsBackToNestedSplit() throws {
+        // The flat `cache_creation_input_tokens` aggregate is primary; when it is
+        // absent, the nested `cache_creation` TTL split carries the count so a
+        // future log-schema change can't silently zero cache writes.
         let flat = #"{"type":"assistant","requestId":"f","timestamp":"2026-06-30T10:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"cache_creation_input_tokens":200,"output_tokens":5}}}"#
         let nested = #"{"type":"assistant","requestId":"n","timestamp":"2026-06-30T10:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"cache_creation":{"ephemeral_5m_input_tokens":999},"output_tokens":5}}}"#
         let r1 = try #require(parser.parse(data: Data(flat.utf8), projectID: "p").first)
         let r2 = try #require(parser.parse(data: Data(nested.utf8), projectID: "p").first)
         #expect(r1.usage.cacheCreationTokens == 200)
-        #expect(r2.usage.cacheCreationTokens == 0)
+        #expect(r2.usage.cacheCreationTokens == 999)
+        #expect(r2.usage.cacheCreation1hTokens == 0)
     }
 
     @Test func intExtractionFloorsDoublesAndDefaultsNonNumeric() throws {
@@ -83,14 +85,14 @@ import Foundation
 
     @Test func mixedModelBlockCostSumsPricedOnly() throws {
         let records = [
-            makeRecord(id: "o", model: "claude-opus-4-8", at: "2026-06-30T10:00:00.000Z", output: 1_000_000),   // $75
+            makeRecord(id: "o", model: "claude-opus-4-8", at: "2026-06-30T10:00:00.000Z", output: 1_000_000),   // $25
             makeRecord(id: "s", model: "claude-sonnet-4-6", at: "2026-06-30T10:30:00.000Z", output: 1_000_000), // $15
             makeRecord(id: "x", model: "<synthetic>", at: "2026-06-30T11:00:00.000Z", output: 1_000_000)        // n/a
         ]
         let blocks = builder().buildBlocks(from: records, now: TestTime.date("2026-06-30T12:00:00.000Z"))
         #expect(blocks.count == 1)
         let cost = try #require(blocks[0].estimatedCost)
-        #expect(abs(cost - 90.0) < 1e-9)
+        #expect(abs(cost - 40.0) < 1e-9)
         #expect(blocks[0].totalTokens == 3_000_000)
     }
 
@@ -317,6 +319,41 @@ import Foundation
         _ = await engine.refreshAccount()        // cache cleared → fetches again
         #expect(client.calls == 2)
     }
+
+    @Test func transientAccountFailureServesLastGoodValueBounded() async throws {
+        let storeDir = fm.temporaryDirectory.appendingPathComponent("um-eng-grace-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fm.removeItem(at: storeDir) }
+        let t0 = Date(timeIntervalSince1970: 1_800_000_000)
+        let client = ScriptedAccountClient(results: [AccountUsage(session: UsageMetric(percent: 42))])
+        let engine = DataEngine(
+            configuration: EngineConfiguration(projectRoots: [], refreshInterval: 60),
+            recordStore: UsageStore(directory: storeDir),
+            statusStore: StatusStore(directory: storeDir),
+            statusClient: StubStatusClient(ServiceStatus(indicator: .none, description: "ok")),
+            accountClient: client,
+            pricing: .defaults,
+            calendar: utcCalendar()
+        )
+
+        let a = await engine.refreshAccount(now: t0)
+        #expect(a?.session?.displayPercent == 42)
+
+        // 2 minutes later the endpoint hiccups (client yields nil): the last
+        // good value is served with its ORIGINAL fetchedAt — not a blank UI.
+        let b = await engine.refreshAccount(now: t0.addingTimeInterval(120))
+        #expect(b?.session?.displayPercent == 42)
+        #expect(b?.fetchedAt == a?.fetchedAt)
+
+        // A failed fetch must not stamp the politeness floor — the next
+        // trigger retries the endpoint immediately.
+        _ = await engine.refreshAccount(now: t0.addingTimeInterval(125))
+        #expect(client.calls == 3)
+
+        // 40 minutes in, still failing: the grace window is over → local-only.
+        // (Keeps a dead 401 session from showing stale data forever.)
+        let c = await engine.refreshAccount(now: t0.addingTimeInterval(40 * 60))
+        #expect(c == nil)
+    }
 }
 
 /// Test double: returns a fixed usage and counts how many times the endpoint was hit.
@@ -330,5 +367,96 @@ final class CountingAccountClient: AccountUsageClient, @unchecked Sendable {
     func currentUsage() async throws -> AccountUsage? {
         lock.withLock { _calls += 1 }
         return usage
+    }
+}
+
+/// Test double: yields queued results in order (nil = failed / logged-out
+/// fetch), then keeps yielding nil. Counts endpoint hits.
+final class ScriptedAccountClient: AccountUsageClient, @unchecked Sendable {
+    private let lock = NSLock()
+    private var results: [AccountUsage?]
+    private var _calls = 0
+    var calls: Int { lock.withLock { _calls } }
+    init(results: [AccountUsage?]) { self.results = results }
+    var isAuthenticated: Bool { get async { true } }
+    func currentUsage() async throws -> AccountUsage? {
+        lock.withLock {
+            _calls += 1
+            return results.isEmpty ? nil : results.removeFirst()
+        }
+    }
+}
+
+@Suite struct LocalClaudeCodeSourceRobustnessTests {
+    let fm = FileManager.default
+
+    private func makeRootAndStore() throws -> (root: URL, storeDir: URL) {
+        let root = fm.temporaryDirectory
+            .appendingPathComponent("um-src-\(UUID().uuidString)", isDirectory: true)
+            .resolvingSymlinksInPath()
+        let storeDir = fm.temporaryDirectory
+            .appendingPathComponent("um-src-store-\(UUID().uuidString)", isDirectory: true)
+        let session = root.appendingPathComponent("projA/s1.jsonl")
+        try fm.createDirectory(at: session.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let line = #"{"type":"assistant","requestId":"r1","timestamp":"2026-06-30T10:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":100}}}"#
+        try Data((line + "\n").utf8).write(to: session)
+        return (root, storeDir)
+    }
+
+    @Test func noOpRefreshDoesNotRewriteTheCacheFile() throws {
+        let (root, storeDir) = try makeRootAndStore()
+        defer { try? fm.removeItem(at: root); try? fm.removeItem(at: storeDir) }
+        let store = UsageStore(directory: storeDir)
+        let source = LocalClaudeCodeSource(store: store, pricing: .defaults)
+
+        _ = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_000))
+        let firstWrite = try Data(contentsOf: store.fileURL)
+
+        // Nothing on disk changed → the cache file must not be rewritten
+        // (a rewrite would at minimum change the persisted lastUpdated).
+        _ = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_060))
+        let secondWrite = try Data(contentsOf: store.fileURL)
+        #expect(firstWrite == secondWrite)
+    }
+
+    @Test func emptyScanWithNonEmptyCacheDoesNotWipeStats() throws {
+        let (root, storeDir) = try makeRootAndStore()
+        defer { try? fm.removeItem(at: root); try? fm.removeItem(at: storeDir) }
+        let store = UsageStore(directory: storeDir)
+        let source = LocalClaudeCodeSource(store: store, pricing: .defaults)
+
+        let seeded = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_000))
+        #expect(seeded.recordCount == 1)
+
+        // Root temporarily unavailable (sandbox bookmark failure, unmounted
+        // volume): the scan finds nothing. Stats and the persisted cache must
+        // survive rather than being wiped to zero.
+        let missing = fm.temporaryDirectory.appendingPathComponent("um-gone-\(UUID().uuidString)")
+        let afterOutage = source.refresh(roots: [missing], now: Date(timeIntervalSince1970: 1_800_000_060))
+        #expect(afterOutage.recordCount == 1)
+        #expect(afterOutage.total.outputTokens == 100)
+
+        let reloaded = UsageStore(directory: storeDir).load()
+        #expect(!reloaded.files.isEmpty)
+    }
+
+    @Test func genuineRemovalStillDropsRecords() throws {
+        // The wipe guard must not break normal removal semantics: when the scan
+        // still sees the root but one file is gone, its records are dropped.
+        let (root, storeDir) = try makeRootAndStore()
+        defer { try? fm.removeItem(at: root); try? fm.removeItem(at: storeDir) }
+        let extra = root.appendingPathComponent("projB/s2.jsonl")
+        try fm.createDirectory(at: extra.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let line = #"{"type":"assistant","requestId":"r2","timestamp":"2026-06-30T11:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":50}}}"#
+        try Data((line + "\n").utf8).write(to: extra)
+
+        let store = UsageStore(directory: storeDir)
+        let source = LocalClaudeCodeSource(store: store, pricing: .defaults)
+        let seeded = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_000))
+        #expect(seeded.recordCount == 2)
+
+        try fm.removeItem(at: extra)
+        let afterRemove = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_060))
+        #expect(afterRemove.recordCount == 1)
     }
 }

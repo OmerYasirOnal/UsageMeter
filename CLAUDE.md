@@ -8,7 +8,7 @@ menu-bar-only (`LSUIElement`), built with SwiftPM (+ an XcodeGen target for the 
 > open-sourced + released (github.com/OmerYasirOnal/UsageMeter, v0.1.0), App-Store-prepped
 > but **not submitted**. App icon **done** (code-generated `gaugefill`; `make icon`).
 > Next: README screenshots (capture demo via `make demo`), then notarize the download /
-> App Store. 113 tests pass.
+> App Store. 132 tests pass.
 
 ## Architecture: three decoupled sources
 
@@ -69,19 +69,19 @@ authenticated access is a **Terms-of-Service grey area**. Mitigations baked in:
     to be tightened from the real capture), `AccountRefreshPolicy` (adaptive
     cadence), provider protocols + `AccountHosts` first-party allowlist. App side:
     `AccountAuth` (WebKit cookies/capture/logout) + `AccountLoginView`.
-  - `Store/` — `UsageStore` (Source-B Codable cache, `cache.json` v2) and
+  - `Store/` — `UsageStore` (Source-B Codable cache, `cache.json` v3) and
     `StatusStore` (Source-C last-good status, `status.json`) — separate files so the
     sources are decoupled in persistence too. GRDB is a planned M3 upgrade.
   - `Engine/` — `DataEngine` (actor; injects all three source seams) + config/snapshot types.
   - `Resources/pricing.json` — editable rate table (ESTIMATES; verify officially).
 - `Sources/UsageMeter/` — thin SwiftUI shell (`@MainActor AppModel` bridges to the actor).
-- `Tests/UsageMeterKitTests/` — 75 fixture/mock-based unit tests (dedup, cost, block
+- `Tests/UsageMeterKitTests/` — 132 fixture/mock-based unit tests (dedup, cost, block
   math, status decoding, incremental scan, store round-trips, DataEngine end-to-end
   orchestration) — no live network or real user data required.
 
 ## Build / run
 
-- `make test` → `swift test` (75 tests, headless, no network/real-data needed).
+- `make test` → `swift test` (132 tests, headless, no network/real-data needed).
 - `make app`  → assembles `UsageMeter.app` (release) with a proper `Info.plist` + icon.
 - `make icon` → regenerates the app icon **from code** (pure CoreGraphics, headless)
   → `Resources/AppIcon.icns` + `Resources/Assets.xcassets/AppIcon.appiconset/`. Edit
@@ -98,9 +98,11 @@ authenticated access is a **Terms-of-Service grey area**. Mitigations baked in:
   real machine ~97% of `.jsonl` files are under `subagents/`.)
 - **Incremental scan**: `UsageStore` caches parsed records per file keyed by
   path + (mtime, size); unchanged files are never re-read.
-- **Cost model** (per 1M tokens): input×rate, cache-write×rate×1.25,
+- **Cost model** (per 1M tokens): input×rate, cache-write×rate×1.25 (5-min TTL)
+  or ×2.0 (1-hour TTL, from the `usage.cache_creation` split),
   cache-read×rate×0.10, output×outputRate. Unknown families (incl. `<synthetic>`)
-  → cost `n/a`.
+  → cost `n/a`. Rates verified 2026-07-02 (opus 5/25, sonnet 3/15, haiku 1/5,
+  fable/mythos 10/50).
 - **Pricing loading**: the app uses `Pricing.loadFromMainBundle()` (reads
   `Contents/Resources/pricing.json`, falls back to built-in defaults — never
   crashes). `Pricing.loadBundled()` (uses `Bundle.module`) is for tests/`swift run`.

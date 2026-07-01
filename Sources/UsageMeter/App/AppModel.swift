@@ -116,12 +116,16 @@ final class AppModel: ObservableObject {
     }
 
     /// Show cached values instantly, then do a live refresh and start the timer.
+    /// The auto-refresh timer starts even in demo mode: `refresh()` no-ops to
+    /// synthetic data while the toggle is on, and keeps ticking with real data
+    /// the moment it's turned off (previously the early return left the app
+    /// permanently stale after demo → off).
     func bootstrap() async {
+        startAutoRefresh()
         if DemoData.isEnabled { snapshot = DemoData.snapshot(); hasLoadedOnce = true; return }
         snapshot = await engine.cachedSnapshot()
         hasLoadedOnce = true
         await refresh()
-        startAutoRefresh()
     }
 
     /// On-demand full refresh (also called when the popover opens / after login).
@@ -223,10 +227,12 @@ final class AppModel: ObservableObject {
         let intervalChanged = settings.refreshIntervalMinutes != previous.refreshIntervalMinutes
 
         if newConfig != previousConfig {
-            Task { await engine.updateConfiguration(newConfig) }
-        }
-        if rootsChanged {
-            Task { await refresh() }
+            // One ordered task: the refresh must not race the config update,
+            // or it can scan the OLD roots.
+            Task {
+                await engine.updateConfiguration(newConfig)
+                if rootsChanged { await self.refresh() }
+            }
         }
         // Sample-data toggle: `settings.save()` above already wrote the flag the
         // `DemoData.isEnabled` gate reads, so a refresh now swaps synthetic ↔ real

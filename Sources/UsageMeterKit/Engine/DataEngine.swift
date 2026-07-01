@@ -28,6 +28,11 @@ public actor DataEngine {
     private var lastAccountFetchAt: Date?
     private var lastAccount: AccountUsage?
     private static let accountFloor: TimeInterval = 60
+    /// How long a last-good account value may be served after a FAILED fetch
+    /// before degrading to local-only. Bounded so a dead session (401 → nil)
+    /// can't show stale numbers forever, while a transient blip (offline, 5xx,
+    /// decode hiccup) doesn't blank the UI and reset burn baselines.
+    private static let accountStaleTTL: TimeInterval = 30 * 60
 
     public init(
         configuration: EngineConfiguration = EngineConfiguration(),
@@ -87,18 +92,26 @@ public actor DataEngine {
     /// Refresh Source A. `nil` → local-only mode (never throws to the caller).
     /// Floor-guarded: within `accountFloor` of the last successful fetch it returns
     /// the cached value without touching the network, so any number of event
-    /// triggers stays polite (≤ 1 endpoint hit per minute). A failed fetch is not
+    /// triggers stays polite (≤ 1 endpoint hit per minute). On a failed fetch the
+    /// last good value is served for up to `accountStaleTTL` — carrying its real
+    /// `fetchedAt` so the UI can show how old it is — and the floor is NOT
     /// stamped, so the next trigger retries immediately.
-    public func refreshAccount() async -> AccountUsage? {
-        if let last = lastAccountFetchAt, Date().timeIntervalSince(last) < Self.accountFloor {
+    public func refreshAccount(now: Date = Date()) async -> AccountUsage? {
+        if let last = lastAccountFetchAt, now.timeIntervalSince(last) < Self.accountFloor {
             return lastAccount
         }
-        guard var usage = (try? await accountClient.currentUsage()) ?? nil else {
+        let fetched = (try? await accountClient.currentUsage()) ?? nil
+        guard var usage = fetched else {
+            if let lastGood = lastAccount, let fetchedAt = lastGood.fetchedAt,
+               now.timeIntervalSince(fetchedAt) < Self.accountStaleTTL {
+                return lastGood
+            }
+            lastAccount = nil
             return nil
         }
-        usage.fetchedAt = Date()          // real fetch time → honest freshness in the UI
+        usage.fetchedAt = now             // real fetch time → honest freshness in the UI
         lastAccount = usage
-        lastAccountFetchAt = Date()
+        lastAccountFetchAt = now
         return usage
     }
 

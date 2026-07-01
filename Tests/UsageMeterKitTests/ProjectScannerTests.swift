@@ -80,4 +80,41 @@ import Foundation
         #expect(afterRemove.removedPaths.count == 1)
         #expect(afterRemove.removedPaths.contains { $0.hasSuffix("projB/s2.jsonl") })
     }
+
+    @Test func subSecondMtimePrecisionLossIsStillUnchanged() throws {
+        // JSONEncoder .iso8601 truncates fractional seconds when the cache is
+        // persisted; APFS mtimes are sub-second. A stamp that lost its fractional
+        // part must still match, or every relaunch re-parses the whole history.
+        let root = try makeTempRoot()
+        defer { try? fm.removeItem(at: root) }
+        try write("{}", to: root.appendingPathComponent("projA/s1.jsonl"))
+
+        let scanner = ProjectScanner()
+        let truncated = Dictionary(uniqueKeysWithValues: scanner.scan(roots: [root]).map {
+            ($0.path, FileStamp(
+                modifiedAt: Date(timeIntervalSince1970: $0.modifiedAt.timeIntervalSince1970.rounded(.down)),
+                size: $0.size))
+        })
+
+        let diff = scanner.diff(roots: [root], against: truncated)
+        #expect(diff.changed.isEmpty)
+        #expect(diff.unchanged.count == 1)
+    }
+
+    @Test func mtimeDifferenceOverToleranceIsStillChanged() throws {
+        // The tolerance must not swallow real modifications: a stamp 2s older
+        // than the file on disk (same size) is a change.
+        let root = try makeTempRoot()
+        defer { try? fm.removeItem(at: root) }
+        try write("{}", to: root.appendingPathComponent("projA/s1.jsonl"))
+
+        let scanner = ProjectScanner()
+        let backdated = Dictionary(uniqueKeysWithValues: scanner.scan(roots: [root]).map {
+            ($0.path, FileStamp(modifiedAt: $0.modifiedAt.addingTimeInterval(-2), size: $0.size))
+        })
+
+        let diff = scanner.diff(roots: [root], against: backdated)
+        #expect(diff.changed.count == 1)
+        #expect(diff.unchanged.isEmpty)
+    }
 }
