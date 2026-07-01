@@ -45,16 +45,22 @@ struct MenuBarContentView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 9) {
-                GaugeGlyph(tint: Theme.accent)
-                    .frame(width: 22, height: 22)
+                Image(systemName: "gauge.with.dots.needle.50percent")
+                    .font(.title3)
+                    .foregroundStyle(Theme.accent)
                 Text("UsageMeter").font(.headline)
                 Spacer()
                 iconButton("chart.bar.xaxis", help: "Open dashboard") { openDashboard() }
                 iconButton("gearshape", help: "Settings") { openSettingsWindow() }
-                iconButton("arrow.clockwise", help: "Refresh now") {
-                    Task { await model.refresh() }
+                if model.isRefreshing {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(width: 26, height: 26)
+                } else {
+                    iconButton("arrow.clockwise", help: "Refresh now") {
+                        Task { await model.refresh() }
+                    }
                 }
-                .disabled(model.isRefreshing)
             }
             HStack(spacing: 5) {
                 Circle().fill(statusIndicator.color).frame(width: 7, height: 7)
@@ -217,7 +223,11 @@ struct MenuBarContentView: View {
     private var footer: some View {
         VStack(alignment: .leading, spacing: 10) {
             TimelineView(.periodic(from: .now, by: 60)) { context in
-                Text("Updated \(Formatting.relativeUpdated(model.snapshot.lastUpdated, now: context.date))")
+                // When logged in, "Updated" reflects the ACCOUNT fetch time (the % is
+                // what the user cares about), not the local log scan (which never
+                // fails and would always read "just now").
+                let stamp = model.snapshot.account?.fetchedAt ?? model.snapshot.lastUpdated
+                Text("Updated \(Formatting.relativeUpdated(stamp, now: context.date))")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

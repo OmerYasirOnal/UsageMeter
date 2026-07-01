@@ -281,7 +281,7 @@ final class MockURLProtocol: URLProtocol {
     @Test func unauthorizedReturnsNilAndSignalsAuthFalse() async throws {
         let url = info.resolvedURL!
         MockURLProtocol.responder = { _ in
-            (HTTPURLResponse(url: url, statusCode: 403, httpVersion: nil, headerFields: nil)!, Data())
+            (HTTPURLResponse(url: url, statusCode: 401, httpVersion: nil, headerFields: nil)!, Data())
         }
         defer { MockURLProtocol.responder = nil }
         let box = AuthBox()
@@ -291,8 +291,28 @@ final class MockURLProtocol: URLProtocol {
             captured: StubCaptured(usage: AccountUsage(session: UsageMetric(percent: 5), fetchedAt: Date())),
             urlSession: mockedSession(),
             onAuthResult: { box.set($0) })
-        #expect(try await client.currentUsage() == nil) // 403 → nil, NOT the stale capture
+        #expect(try await client.currentUsage() == nil) // 401 → nil, NOT the stale capture
         #expect(box.value == false)
+    }
+
+    @Test func forbidden403FallsBackToRecentCaptureAndKeepsSession() async throws {
+        // A 403 is often a transient bot-challenge / rate-limit, not a dead session:
+        // serve the recent capture and DON'T flap auth to logged-out.
+        let url = info.resolvedURL!
+        MockURLProtocol.responder = { _ in
+            (HTTPURLResponse(url: url, statusCode: 403, httpVersion: nil, headerFields: nil)!, Data())
+        }
+        defer { MockURLProtocol.responder = nil }
+        let box = AuthBox()
+        let client = LiveAccountUsageClient(
+            session: StubSession(header: "a=1", logged: true),
+            endpoint: StubEndpoint(info: info),
+            captured: StubCaptured(usage: AccountUsage(session: UsageMetric(percent: 7), fetchedAt: Date())),
+            urlSession: mockedSession(),
+            onAuthResult: { box.set($0) })
+        let usage = try await client.currentUsage()
+        #expect(usage?.session?.displayPercent == 7) // recent capture, not nil
+        #expect(box.value == nil)                     // auth NOT signalled false
     }
 
     @Test func serverErrorFallsBackToRecentCapture() async throws {

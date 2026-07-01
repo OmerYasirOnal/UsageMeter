@@ -83,11 +83,14 @@ make xcodeproj  # generate the Xcode app target (needs XcodeGen)
   path is the sandboxed App Store target.** Two build paths on purpose.
 - **App icon is code-generated** — regenerate/tweak via `make icon` (edit
   `Scripts/icon/render.swift`; the `gaugefill` case is the shipping concept).
-- **Menu-bar glyph is custom & vector** — `GaugeGlyph` (`Sources/UsageMeter/MenuBar/
-  GaugeGlyph.swift`) draws the same gauge as the app icon with a SwiftUI `Canvas`
-  (no asset catalog, scales crisply, tints to the usage/status color). Replaced the
-  old SF Symbol so the menu bar and icon read as one mark; still supports the live-%
-  text overlay. Its `value` param could later be driven by the live session %.
+- **Menu-bar glyph = SF Symbol `gauge.with.dots.needle.50percent`.** ⚠️ We tried a
+  custom `Canvas` mark (`GaugeGlyph`) but **`Canvas` does not render in a MenuBarExtra
+  label** (AppKit snapshots the label to a *template image*; Canvas draws blank and
+  breaks the layout so the % after it vanishes too). Reverted to the SF Symbol gauge
+  (same family as the icon, templates + tints reliably, supports the live-% overlay).
+  The custom gauge lives where it renders correctly: the **app icon** (CG-rendered
+  `.icns`). If a custom menu-bar mark is ever wanted, pre-render it to a template
+  PDF/PNG (`Image(...).renderingMode(.template)`), not a live `Canvas`.
 - Login auto-close triggers on `auth.lastCaptured` (real usage capture), never while
   typing credentials.
 
@@ -97,7 +100,7 @@ make xcodeproj  # generate the Xcode app target (needs XcodeGen)
    to `docs/screenshots/` and embeds in README. _(blocked on capture)_
 2. **Verify the Pages privacy URL is live.**
 3. ~~**App icon**~~ — ✅ **done** (code-generated `gaugefill`; `make icon`).
-   ~~Custom menu-bar glyph~~ — ✅ **done** (`GaugeGlyph`, vector `Canvas`, matches the icon).
+   Menu-bar glyph stays the SF Symbol gauge (Canvas can't render in a menu-bar label).
 4. **Apple Developer Program ($99/yr)** — unlocks (a) **notarizing the GitHub
    download** (removes the scary Gatekeeper warning) and (b) App Store submission.
 5. **App Store scope decision** — local-only (recommended, clean approval) vs full

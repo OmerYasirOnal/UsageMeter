@@ -20,6 +20,15 @@ public actor DataEngine {
     /// Last good status (Source C), seeded from disk so launch shows it instantly.
     private var lastStatus: ServiceStatus?
 
+    /// Account (Source A) politeness throttle: the unofficial claude.ai endpoint is
+    /// hit at most once per `accountFloor`, no matter how many callers fire
+    /// (background loop, popover, wake, network reconnect, manual button). Between
+    /// hits, the last good value is served — carrying its real `fetchedAt` so the UI
+    /// can show how old it is.
+    private var lastAccountFetchAt: Date?
+    private var lastAccount: AccountUsage?
+    private static let accountFloor: TimeInterval = 60
+
     public init(
         configuration: EngineConfiguration = EngineConfiguration(),
         recordStore: UsageStore = UsageStore(),
@@ -76,8 +85,21 @@ public actor DataEngine {
     }
 
     /// Refresh Source A. `nil` → local-only mode (never throws to the caller).
+    /// Floor-guarded: within `accountFloor` of the last successful fetch it returns
+    /// the cached value without touching the network, so any number of event
+    /// triggers stays polite (≤ 1 endpoint hit per minute). A failed fetch is not
+    /// stamped, so the next trigger retries immediately.
     public func refreshAccount() async -> AccountUsage? {
-        (try? await accountClient.currentUsage()) ?? nil
+        if let last = lastAccountFetchAt, Date().timeIntervalSince(last) < Self.accountFloor {
+            return lastAccount
+        }
+        guard var usage = (try? await accountClient.currentUsage()) ?? nil else {
+            return nil
+        }
+        usage.fetchedAt = Date()          // real fetch time → honest freshness in the UI
+        lastAccount = usage
+        lastAccountFetchAt = Date()
+        return usage
     }
 
     /// Full refresh of all sources, returning a unified snapshot. Source C and A
@@ -99,10 +121,19 @@ public actor DataEngine {
         )
     }
 
+    /// Drop the account (Source A) throttle cache so the next refresh fetches
+    /// immediately. Call on logout so a stale account can't be served during the
+    /// 60s window, and so re-login shows fresh numbers at once.
+    public func clearAccountCache() {
+        lastAccount = nil
+        lastAccountFetchAt = nil
+    }
+
     /// Clear all cached state.
     public func resetCache() {
         claudeCode.reset()
         statusStore.clear()
         lastStatus = nil
+        clearAccountCache()
     }
 }

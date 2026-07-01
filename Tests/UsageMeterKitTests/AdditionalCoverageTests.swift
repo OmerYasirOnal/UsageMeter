@@ -292,4 +292,43 @@ import Foundation
         let status = await engine.refreshStatus()
         #expect(status?.indicator == StatusIndicator.none) // fell back to seeded last-good
     }
+
+    @Test func accountFetchIsFloorGuardedWithin60s() async throws {
+        let storeDir = fm.temporaryDirectory.appendingPathComponent("um-eng-floor-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fm.removeItem(at: storeDir) }
+        let client = CountingAccountClient(usage: AccountUsage(session: UsageMetric(percent: 42)))
+        let engine = DataEngine(
+            configuration: EngineConfiguration(projectRoots: [], refreshInterval: 60),
+            recordStore: UsageStore(directory: storeDir),
+            statusStore: StatusStore(directory: storeDir),
+            statusClient: StubStatusClient(ServiceStatus(indicator: .none, description: "ok")),
+            accountClient: client,
+            pricing: .defaults,
+            calendar: utcCalendar()
+        )
+        let a = await engine.refreshAccount()
+        let b = await engine.refreshAccount()   // within 60s → cached, no 2nd endpoint hit
+        #expect(a?.session?.displayPercent == 42)
+        #expect(b?.session?.displayPercent == 42)
+        #expect(a?.fetchedAt != nil)             // stamped with the real fetch time
+        #expect(client.calls == 1)               // politeness floor held
+
+        await engine.clearAccountCache()
+        _ = await engine.refreshAccount()        // cache cleared → fetches again
+        #expect(client.calls == 2)
+    }
+}
+
+/// Test double: returns a fixed usage and counts how many times the endpoint was hit.
+final class CountingAccountClient: AccountUsageClient, @unchecked Sendable {
+    private let lock = NSLock()
+    private var _calls = 0
+    var calls: Int { lock.withLock { _calls } }
+    private let usage: AccountUsage
+    init(usage: AccountUsage) { self.usage = usage }
+    var isAuthenticated: Bool { get async { true } }
+    func currentUsage() async throws -> AccountUsage? {
+        lock.withLock { _calls += 1 }
+        return usage
+    }
 }

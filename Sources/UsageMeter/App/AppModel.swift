@@ -1,5 +1,7 @@
 import Foundation
 import Combine
+import AppKit
+import Network
 import UsageMeterKit
 
 /// The single source of truth for the UI. Lives on the main actor, owns the
@@ -22,6 +24,12 @@ final class AppModel: ObservableObject {
     private var autoRefreshTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
     private var didFinishInit = false
+    /// Coalescing flag: a refresh requested while one is in flight runs exactly once
+    /// more when it finishes (never silently dropped, never a queue).
+    private var pendingRefresh = false
+    /// Network reachability: refresh on the offline→online edge (floor-guarded).
+    private let pathMonitor = NWPathMonitor()
+    private var lastPathSatisfied = true
 
     init() {
         ClaudeFolderAccess.restore()   // sandbox: reopen a previously-granted ~/.claude
@@ -70,6 +78,26 @@ final class AppModel: ObservableObject {
             .sink { [weak self] _ in Task { await self?.refresh() } }
             .store(in: &cancellables)
 
+        // The Mac's data goes stale while it sleeps — refresh as soon as it wakes
+        // so the popover is current the moment the user looks (event-driven, not polling).
+        NSWorkspace.shared.notificationCenter
+            .publisher(for: NSWorkspace.didWakeNotification)
+            .sink { [weak self] _ in Task { await self?.refresh() } }
+            .store(in: &cancellables)
+
+        // Refresh the instant the network comes back (offline→online edge only).
+        // The engine's 60s floor keeps this polite regardless of flapping.
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            let satisfied = (path.status == .satisfied)
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let cameOnline = satisfied && !self.lastPathSatisfied
+                self.lastPathSatisfied = satisfied
+                if cameOnline { await self.refresh() }
+            }
+        }
+        pathMonitor.start(queue: DispatchQueue(label: "com.usagemeter.network-monitor"))
+
         Task { await bootstrap() }
     }
 
@@ -85,12 +113,18 @@ final class AppModel: ObservableObject {
     /// On-demand full refresh (also called when the popover opens / after login).
     func refresh() async {
         if DemoData.isEnabled { snapshot = DemoData.snapshot(); hasLoadedOnce = true; return }
-        guard !isRefreshing else { return }
+        // Coalesce: if a refresh is already running, mark one trailing re-run and
+        // return — so the freshness-critical triggers (popover open, after login,
+        // wake, reconnect, manual) are never silently dropped by a busy guard.
+        if isRefreshing { pendingRefresh = true; return }
         isRefreshing = true
-        snapshot = await engine.refreshAll()
-        hasLoadedOnce = true
+        repeat {
+            pendingRefresh = false
+            snapshot = await engine.refreshAll()
+            hasLoadedOnce = true
+            notifier.evaluate(snapshot.account, enabled: settings.notificationsEnabled)
+        } while pendingRefresh
         isRefreshing = false
-        notifier.evaluate(snapshot.account, enabled: settings.notificationsEnabled)
     }
 
     /// Prompt for sandbox access to `~/.claude`, then reconfigure + refresh.
@@ -114,6 +148,7 @@ final class AppModel: ObservableObject {
 
     func logOut() async {
         await accountAuth.logout()
+        await engine.clearAccountCache()   // don't let the 60s throttle serve the old account
         notifier.reset()
         // Clear immediately so the UI can't show stale % even if a refresh is
         // coalesced away by the isRefreshing guard.
@@ -172,5 +207,6 @@ final class AppModel: ObservableObject {
 
     deinit {
         autoRefreshTask?.cancel()
+        pathMonitor.cancel()
     }
 }

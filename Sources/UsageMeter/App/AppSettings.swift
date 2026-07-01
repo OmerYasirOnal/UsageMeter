@@ -25,7 +25,7 @@ struct AppSettings: Equatable {
         refreshIntervalMinutes: 3,
         launchAtLogin: false,
         showCostInMenuBar: false,
-        showPercentInMenuBar: false,
+        showPercentInMenuBar: true,
         showApiValue: true,
         notificationsEnabled: true,
         appearance: .system
@@ -70,7 +70,11 @@ struct AppSettings: Equatable {
         }
         settings.launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
         settings.showCostInMenuBar = defaults.bool(forKey: Keys.showCost)
-        settings.showPercentInMenuBar = defaults.bool(forKey: Keys.showPercent)
+        // Only override the default (true) when the user has explicitly set this —
+        // otherwise a missing key would read `false` and hide the % everyone had.
+        if defaults.object(forKey: Keys.showPercent) != nil {
+            settings.showPercentInMenuBar = defaults.bool(forKey: Keys.showPercent)
+        }
         if defaults.object(forKey: Keys.showApiValue) != nil {
             settings.showApiValue = defaults.bool(forKey: Keys.showApiValue)
         }

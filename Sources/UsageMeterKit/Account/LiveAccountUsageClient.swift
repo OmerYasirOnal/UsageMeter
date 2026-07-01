@@ -80,9 +80,16 @@ public struct LiveAccountUsageClient: AccountUsageClient {
         guard let http = response as? HTTPURLResponse else {
             return await capturedFallback()
         }
-        if http.statusCode == 401 || http.statusCode == 403 {
+        if http.statusCode == 401 {
             onAuthResult?(false)
-            return nil // session dead — do not show stale captured data
+            return nil // unauthorized — session dead; don't show stale captured data
+        }
+        if http.statusCode == 403 {
+            // 403 is frequently a transient bot-challenge / rate-limit rather than a
+            // dead session — don't flap to logged-out or wipe the capture; serve a
+            // recent capture (or nil) like other transient errors. A truly dead
+            // session surfaces as 401 or an expired capture → local-only.
+            return await capturedFallback()
         }
         guard (200...299).contains(http.statusCode) else {
             return await capturedFallback() // 5xx / 429 → keep last good if recent
