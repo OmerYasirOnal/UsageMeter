@@ -7,7 +7,7 @@
 name: UsageMeter
 
 options:
-  bundleIdPrefix: com.omeryasironal
+  bundleIdPrefix: com.omeryasir
   deploymentTarget:
     macOS: "15.0"
   createIntermediateGroups: true
@@ -34,7 +34,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: UsageMeter
-        PRODUCT_BUNDLE_IDENTIFIER: com.omeryasironal.usagemeter
+        PRODUCT_BUNDLE_IDENTIFIER: com.omeryasir.usagemeter
         MARKETING_VERSION: "0.2.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "6.0"

@@ -11,7 +11,7 @@ compiled out of the App Store build (it lives only in the GitHub download).
 **Subtitle** (≤30 chars): `Private Claude usage tracker`
 **Primary category:** Developer Tools   ·   **Secondary:** Utilities
 **Price:** Free
-**Bundle ID:** `com.omeryasironal.usagemeter`
+**Bundle ID:** `com.omeryasir.usagemeter`
 
 **Promotional text** (≤170 chars):
 > Watch your Claude Code usage right from the menu bar — tokens, cost, and a "when will you run out?" projection. 100% private; nothing ever leaves your Mac.

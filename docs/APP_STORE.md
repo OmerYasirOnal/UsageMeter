@@ -34,7 +34,7 @@ Everything below assumes you do the sandbox work either way (required for both).
 
 - **Apple Developer Program** membership — **$99/year** (individual or org).
 - **App Store Connect** access; an **App ID / bundle identifier** you own
-  (e.g. `com.omeryasironal.usagemeter`).
+  (e.g. `com.omeryasir.usagemeter`).
 - **Xcode 26** (you have it). Signing certificates are created automatically by Xcode
   ("Automatically manage signing") once you're in the Developer Program.
 
@@ -104,7 +104,7 @@ manual step left is setting your **Development Team** in Signing & Capabilities,
 Xcode **App target** that can be archived:
 
 1. In Xcode: **File ▸ New ▸ Project ▸ macOS App** (SwiftUI). Bundle id =
-   `com.omeryasironal.usagemeter`, deployment target **macOS 15**.
+   `com.omeryasir.usagemeter`, deployment target **macOS 15**.
 2. **Add the local package**: File ▸ Add Package Dependencies ▸ Add Local… → select
    this repo → add the `UsageMeterKit` library to the app target.
 3. Move/`Add Files` the `Sources/UsageMeter/**` Swift files into the app target.
