@@ -40,6 +40,7 @@ targets:
         SWIFT_VERSION: "6.0"
         CODE_SIGN_ENTITLEMENTS: UsageMeter.entitlements
         CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: "9X8FDSW5D8"   # Ömer Yasir Önal (Apple Distribution / App Store team)
         GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         # Local-only App Store build: compiles out the claude.ai login (Source A).
