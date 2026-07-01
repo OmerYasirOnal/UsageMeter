@@ -10,6 +10,7 @@ struct MenuBarContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
+            if DemoData.isEnabled { SampleDataBanner() }
             // Account (Source A) — compiled out of the local-only App Store build.
             #if !APPSTORE
             if let account = model.snapshot.account, account.hasAnyMetric {

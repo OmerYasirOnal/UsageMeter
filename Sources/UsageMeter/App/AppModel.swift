@@ -228,6 +228,12 @@ final class AppModel: ObservableObject {
         if rootsChanged {
             Task { await refresh() }
         }
+        // Sample-data toggle: `settings.save()` above already wrote the flag the
+        // `DemoData.isEnabled` gate reads, so a refresh now swaps synthetic ↔ real
+        // data straight away.
+        if settings.showSampleData != previous.showSampleData {
+            Task { await refresh() }
+        }
         if intervalChanged {
             startAutoRefresh()
         }

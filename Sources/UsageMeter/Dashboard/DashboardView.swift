@@ -24,6 +24,7 @@ struct DashboardView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 title
+                if DemoData.isEnabled { SampleDataBanner() }
                 if let account = model.snapshot.account, account.hasAnyMetric {
                     accountCards(account)
                 }

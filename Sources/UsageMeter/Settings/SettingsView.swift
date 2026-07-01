@@ -79,6 +79,10 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                Toggle("Show sample data (preview)", isOn: $model.settings.showSampleData)
+                Text("Displays synthetic example usage so you can preview UsageMeter before you have Claude Code history.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Notifications") {
@@ -129,6 +133,12 @@ struct SettingsView: View {
                     .font(.caption)
                 Text("Everything stays on this Mac.")
                     .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("About") {
+                Text("UsageMeter is an independent tool, not affiliated with, endorsed by, or sponsored by Anthropic. Claude and Claude Code are trademarks of Anthropic PBC.")
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
             }
         }
