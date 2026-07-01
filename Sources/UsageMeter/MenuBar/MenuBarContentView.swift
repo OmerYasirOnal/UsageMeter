@@ -45,9 +45,8 @@ struct MenuBarContentView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 9) {
-                Image(systemName: "gauge.with.dots.needle.50percent")
-                    .font(.title3)
-                    .foregroundStyle(Theme.accent)
+                GaugeGlyph(tint: Theme.accent)
+                    .frame(width: 22, height: 22)
                 Text("UsageMeter").font(.headline)
                 Spacer()
                 iconButton("chart.bar.xaxis", help: "Open dashboard") { openDashboard() }
