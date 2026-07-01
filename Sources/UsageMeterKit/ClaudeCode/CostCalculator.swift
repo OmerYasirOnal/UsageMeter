@@ -1,13 +1,15 @@
 import Foundation
 
 /// Turns token counts into estimated USD cost using the Section 4.4 model:
-///   fresh input → input_tokens × input_rate
-///   cache write → cache_creation_input_tokens × input_rate × 1.25
-///   cache read  → cache_read_input_tokens × input_rate × 0.10
-///   output      → output_tokens × output_rate
+///   fresh input       → input_tokens × input_rate
+///   cache write (5m)  → (cache_creation - 1h portion) × input_rate × 1.25
+///   cache write (1h)  → cache_creation_1h × input_rate × 2.0
+///   cache read        → cache_read_input_tokens × input_rate × 0.10
+///   output            → output_tokens × output_rate
 /// Rates are per 1,000,000 tokens. Unknown/unpriced families return `nil` (n/a).
 public struct CostCalculator: Sendable {
     public static let cacheWriteMultiplier = 1.25
+    public static let cacheWrite1hMultiplier = 2.0
     public static let cacheReadMultiplier = 0.10
     private static let perTokenDivisor = 1_000_000.0
 
@@ -21,8 +23,11 @@ public struct CostCalculator: Sendable {
     /// Returns `nil` when the family is `.unknown` or has no rate entry.
     public func cost(usage: TokenUsage, family: ModelFamily) -> Double? {
         guard family.isPriced, let rate = pricing.rate(for: family) else { return nil }
+        let oneHourWrite = Double(min(usage.cacheCreation1hTokens, usage.cacheCreationTokens))
+        let fiveMinWrite = Double(usage.cacheCreationTokens) - oneHourWrite
         let inputCost = Double(usage.inputTokens) * rate.input
-        let cacheWriteCost = Double(usage.cacheCreationTokens) * rate.input * Self.cacheWriteMultiplier
+        let cacheWriteCost = fiveMinWrite * rate.input * Self.cacheWriteMultiplier
+            + oneHourWrite * rate.input * Self.cacheWrite1hMultiplier
         let cacheReadCost = Double(usage.cacheReadTokens) * rate.input * Self.cacheReadMultiplier
         let outputCost = Double(usage.outputTokens) * rate.output
         return (inputCost + cacheWriteCost + cacheReadCost + outputCost) / Self.perTokenDivisor
