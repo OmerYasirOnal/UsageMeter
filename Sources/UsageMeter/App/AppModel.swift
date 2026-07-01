@@ -30,6 +30,9 @@ final class AppModel: ObservableObject {
     /// Network reachability: refresh on the offline→online edge (floor-guarded).
     private let pathMonitor = NWPathMonitor()
     private var lastPathSatisfied = true
+    /// First observation seen this reset-cycle per metric, for the burn projection
+    /// ("when will you run out"). In-memory: re-gathers ~15 min after a relaunch.
+    private var cycleObs: [String: (cycleKey: String, pct: Double, date: Date)] = [:]
 
     init() {
         ClaudeFolderAccess.restore()   // sandbox: reopen a previously-granted ~/.claude
@@ -112,7 +115,11 @@ final class AppModel: ObservableObject {
 
     /// On-demand full refresh (also called when the popover opens / after login).
     func refresh() async {
-        if DemoData.isEnabled { snapshot = DemoData.snapshot(); hasLoadedOnce = true; return }
+        if DemoData.isEnabled {
+            snapshot = DemoData.snapshot(); hasLoadedOnce = true
+            updateCycleObservations(snapshot.account)
+            return
+        }
         // Coalesce: if a refresh is already running, mark one trailing re-run and
         // return — so the freshness-critical triggers (popover open, after login,
         // wake, reconnect, manual) are never silently dropped by a busy guard.
@@ -122,9 +129,42 @@ final class AppModel: ObservableObject {
             pendingRefresh = false
             snapshot = await engine.refreshAll()
             hasLoadedOnce = true
+            updateCycleObservations(snapshot.account)
             notifier.evaluate(snapshot.account, enabled: settings.notificationsEnabled)
         } while pendingRefresh
         isRefreshing = false
+    }
+
+    // MARK: - Burn projection ("when will you run out")
+
+    /// Record the first % seen in the current reset-cycle for each metric, so the
+    /// projection has a smoothed baseline. Keeps the earliest sample per cycle.
+    private func updateCycleObservations(_ account: AccountUsage?, now: Date = Date()) {
+        let metrics: [(String, UsageMetric?)] = [
+            ("Session", account?.session), ("Weekly", account?.weekly), ("Weekly Opus", account?.weeklyOpus)
+        ]
+        for (name, metric) in metrics {
+            guard let metric else { cycleObs[name] = nil; continue }
+            let key = NotificationPolicy.cycleKey(for: metric.resetsAt)
+            if DemoData.isEnabled {
+                // Seed a synthetic baseline so the demo shows a live projection now
+                // (real mode gathers ~15 min of real observation first).
+                cycleObs[name] = (key, max(0, metric.percent - 14), now.addingTimeInterval(-90 * 60))
+                continue
+            }
+            if cycleObs[name]?.cycleKey != key {
+                cycleObs[name] = (key, metric.percent, now)   // new cycle → new baseline
+            }
+        }
+    }
+
+    /// The burn projection for a named account metric at `now` — drive from a
+    /// `TimelineView` so the "time to limit" ticks down live.
+    func projection(for name: String, _ metric: UsageMetric, now: Date = Date()) -> UsageProjection {
+        let obs = cycleObs[name]
+        return UsageProjection.compute(
+            percent: metric.percent, resetsAt: metric.resetsAt,
+            startPercent: obs?.pct, startDate: obs?.date, now: now)
     }
 
     /// Prompt for sandbox access to `~/.claude`, then reconfigure + refresh.

@@ -24,7 +24,7 @@ public enum AccountRefreshPolicy {
         case 90...:      scaled = base * 0.25 // very close to a limit — watch it
         case 75..<90:    scaled = base * 0.5
         case 50..<75:    scaled = base
-        default:         scaled = base * 2.0  // low usage — relax
+        default:         scaled = base * 1.5  // low usage — relax a little (usage can climb fast)
         }
         return clamp(scaled, minimum, maximum)
     }

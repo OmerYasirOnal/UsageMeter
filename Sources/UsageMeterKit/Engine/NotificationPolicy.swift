@@ -105,7 +105,7 @@ public enum NotificationPolicy {
 
     /// Quantize the reset instant to the hour so sub-second/recomputed jitter (and
     /// the heuristic decoder's relative-duration resets) don't reset state every poll.
-    static func cycleKey(for resetsAt: Date?) -> String {
+    public static func cycleKey(for resetsAt: Date?) -> String {
         guard let resetsAt else { return "none" }
         return String(Int(resetsAt.timeIntervalSince1970 / 3600))
     }

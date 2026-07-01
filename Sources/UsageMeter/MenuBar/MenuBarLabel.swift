@@ -29,10 +29,14 @@ struct MenuBarLabel: View {
         }
         .foregroundStyle(tint)
         .onAppear {
-            // Self-test hook: open the login window on launch when requested.
+            // Self-test / screenshot hooks: open a window on launch when requested.
             if !didAutoOpen, ProcessInfo.processInfo.environment["USAGEMETER_OPEN_LOGIN"] == "1" {
                 didAutoOpen = true
                 openWindow(id: AppWindowID.accountLogin)
+            }
+            if !didAutoOpen, ProcessInfo.processInfo.environment["USAGEMETER_OPEN_DASHBOARD"] == "1" {
+                didAutoOpen = true
+                openWindow(id: AppWindowID.dashboard)
             }
         }
     }

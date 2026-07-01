@@ -75,26 +75,58 @@ struct DashboardView: View {
 
     private func accountCards(_ account: AccountUsage) -> some View {
         HStack(spacing: 14) {
-            if let s = account.session { accountCard("Current Session", s) }
-            if let w = account.weekly { accountCard("Weekly Limit", w) }
-            if let o = account.weeklyOpus { accountCard("Weekly Opus", o) }
+            if let s = account.session { accountCard("Current Session", key: "Session", s) }
+            if let w = account.weekly { accountCard("Weekly Limit", key: "Weekly", w) }
+            if let o = account.weeklyOpus { accountCard("Weekly Opus", key: "Weekly Opus", o) }
             if let spend = account.spend { spendCard(spend) }
         }
     }
 
-    private func accountCard(_ title: String, _ metric: UsageMetric) -> some View {
+    private func accountCard(_ title: String, key: String, _ metric: UsageMetric) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
             Text("\(metric.displayPercent)%")
                 .font(.system(size: 32, weight: .bold, design: .rounded)).monospacedDigit()
                 .foregroundStyle(Theme.usageColor(metric.percent))
             UsageBar(percent: metric.percent, color: Theme.usageColor(metric.percent))
-            if let reset = Formatting.resetDescription(to: metric.resetsAt) {
-                Text("Resets \(reset)").font(.caption).foregroundStyle(.secondary)
+            TimelineView(.periodic(from: .now, by: 60)) { context in
+                VStack(alignment: .leading, spacing: 5) {
+                    if let reset = Formatting.resetDescription(to: metric.resetsAt, now: context.date) {
+                        Text("Resets \(reset)").font(.caption).foregroundStyle(.secondary)
+                    }
+                    dashProjection(model.projection(for: key, metric, now: context.date))
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()
+    }
+
+    /// "When will you run out" — the burn projection on a dashboard account card.
+    @ViewBuilder
+    private func dashProjection(_ proj: UsageProjection) -> some View {
+        let rate = proj.ratePerHour.map { "≈ \(String(format: "%.0f", $0))%/hr" }
+        switch proj.status {
+        case .exhausts(let ttl, _):
+            projStack("exclamationmark.triangle.fill", Theme.warning,
+                      "Hits the limit in ~\(Formatting.duration(ttl)) — before it resets", rate)
+        case .resetsFirst(let ttl):
+            projStack("checkmark.circle", Theme.ok,
+                      "Resets before the limit (~\(Formatting.duration(ttl)) to limit)", rate)
+        case .gathering:
+            Text("Gathering your pace…").font(.caption2).foregroundStyle(.tertiary)
+        case .notRising:
+            Text("Not rising right now").font(.caption2).foregroundStyle(.tertiary)
+        }
+    }
+
+    private func projStack(_ icon: String, _ tint: Color, _ text: String, _ rate: String?) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Label(text, systemImage: icon).foregroundStyle(tint)
+                .fixedSize(horizontal: false, vertical: true)
+            if let rate { Text(rate).foregroundStyle(.secondary) }
+        }
+        .font(.caption2)
     }
 
     private func spendCard(_ spend: SpendInfo) -> some View {

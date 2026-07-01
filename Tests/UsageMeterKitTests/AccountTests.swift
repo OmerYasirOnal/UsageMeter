@@ -136,7 +136,7 @@ private let fixedNow = TestTime.date("2026-06-30T12:00:00Z")
     @Test func scalesByUtilizationBand() {
         #expect(AccountRefreshPolicy.interval(for: usage(80), base: 180) == 90)
         #expect(AccountRefreshPolicy.interval(for: usage(60), base: 180) == 180)
-        #expect(AccountRefreshPolicy.interval(for: usage(10), base: 180) == 360)
+        #expect(AccountRefreshPolicy.interval(for: usage(10), base: 180) == 270) // low usage → base × 1.5
     }
 
     @Test func clampsToMaximum() {

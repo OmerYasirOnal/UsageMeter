@@ -22,7 +22,7 @@ struct AppSettings: Equatable {
 
     static let `default` = AppSettings(
         projectRootPaths: [],
-        refreshIntervalMinutes: 3,
+        refreshIntervalMinutes: 1,
         launchAtLogin: false,
         showCostInMenuBar: false,
         showPercentInMenuBar: true,

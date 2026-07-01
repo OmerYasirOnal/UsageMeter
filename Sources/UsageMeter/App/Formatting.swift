@@ -53,6 +53,15 @@ enum Formatting {
         }
     }
 
+    /// A duration like "2h 10m", "45m", or "<1m" for a seconds interval.
+    static func duration(_ seconds: TimeInterval) -> String {
+        let s = max(0, Int(seconds))
+        let h = s / 3600, m = (s % 3600) / 60
+        if h > 0 { return "\(h)h \(m)m" }
+        if m > 0 { return "\(m)m" }
+        return "<1m"
+    }
+
     /// Countdown like "2h 14m" until the given date, or nil if past/unknown.
     static func countdown(to date: Date?, now: Date = Date()) -> String? {
         guard let date else { return nil }

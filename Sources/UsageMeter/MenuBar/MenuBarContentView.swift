@@ -89,9 +89,9 @@ struct MenuBarContentView: View {
                     .font(.caption2)
                     .foregroundStyle(Theme.accent)
             }
-            if let session = account.session { accountMetric("Current Session", session) }
-            if let weekly = account.weekly { accountMetric("Weekly Limit", weekly) }
-            if let opus = account.weeklyOpus { accountMetric("Weekly Opus", opus) }
+            if let session = account.session { accountMetric("Current Session", key: "Session", session) }
+            if let weekly = account.weekly { accountMetric("Weekly Limit", key: "Weekly", weekly) }
+            if let opus = account.weeklyOpus { accountMetric("Weekly Opus", key: "Weekly Opus", opus) }
             if let spend = account.spend {
                 HStack {
                     Text("Pay-as-you-go used").font(.caption).foregroundStyle(.secondary)
@@ -103,7 +103,7 @@ struct MenuBarContentView: View {
         }
     }
 
-    private func accountMetric(_ title: String, _ metric: UsageMetric) -> some View {
+    private func accountMetric(_ title: String, key: String, _ metric: UsageMetric) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
             Text("\(metric.displayPercent)%")
@@ -113,15 +113,35 @@ struct MenuBarContentView: View {
                 .contentTransition(.numericText())
                 .animation(.snappy, value: metric.displayPercent)
             UsageBar(percent: metric.percent, color: Theme.usageColor(metric.percent))
-            // Tick once a minute so the "Resets in 2h 8m" countdown stays live
-            // while the popover is open (matches the footer's "Updated" line).
+            // Tick once a minute so the "Resets in 2h 8m" countdown and the burn
+            // projection stay live while the popover is open.
             TimelineView(.periodic(from: .now, by: 60)) { context in
-                if let reset = Formatting.resetDescription(to: metric.resetsAt, now: context.date) {
-                    Text("Resets \(reset)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 3) {
+                    if let reset = Formatting.resetDescription(to: metric.resetsAt, now: context.date) {
+                        Text("Resets \(reset)").font(.caption).foregroundStyle(.secondary)
+                    }
+                    projectionLine(model.projection(for: key, metric, now: context.date))
                 }
             }
+        }
+    }
+
+    /// "When will you run out" — the burn projection for one metric.
+    @ViewBuilder
+    private func projectionLine(_ proj: UsageProjection) -> some View {
+        switch proj.status {
+        case .exhausts(let ttl, _):
+            Label("At this pace: hits the limit in ~\(Formatting.duration(ttl)) — before it resets",
+                  systemImage: "exclamationmark.triangle.fill")
+                .font(.caption2).foregroundStyle(Theme.warning)
+                .fixedSize(horizontal: false, vertical: true)
+        case .resetsFirst(let ttl):
+            Label("On pace to reset before the limit (~\(Formatting.duration(ttl)) to limit)",
+                  systemImage: "checkmark.circle")
+                .font(.caption2).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        case .gathering, .notRising:
+            EmptyView()
         }
     }
 
