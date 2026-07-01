@@ -29,12 +29,14 @@ struct UsageMeterApp: App {
         }
         .defaultSize(width: 920, height: 700)
 
-        // claude.ai login (Source A — Milestone 2).
+        // claude.ai login (Source A) — compiled out of the local-only App Store build.
+        #if !APPSTORE
         Window("Sign in to claude.ai", id: AppWindowID.accountLogin) {
             AccountLoginScreen(auth: model.accountAuth)
                 .environmentObject(model)
         }
         .defaultSize(width: 860, height: 680)
+        #endif
     }
 }
 

@@ -30,10 +30,12 @@ struct MenuBarLabel: View {
         .foregroundStyle(tint)
         .onAppear {
             // Self-test / screenshot hooks: open a window on launch when requested.
+            #if !APPSTORE
             if !didAutoOpen, ProcessInfo.processInfo.environment["USAGEMETER_OPEN_LOGIN"] == "1" {
                 didAutoOpen = true
                 openWindow(id: AppWindowID.accountLogin)
             }
+            #endif
             if !didAutoOpen, ProcessInfo.processInfo.environment["USAGEMETER_OPEN_DASHBOARD"] == "1" {
                 didAutoOpen = true
                 openWindow(id: AppWindowID.dashboard)

@@ -103,9 +103,9 @@ make xcodeproj  # generate the Xcode app target (needs XcodeGen)
    Menu-bar glyph stays the SF Symbol gauge (Canvas can't render in a menu-bar label).
 4. **Apple Developer Program ($99/yr)** — unlocks (a) **notarizing the GitHub
    download** (removes the scary Gatekeeper warning) and (b) App Store submission.
-5. **App Store scope decision** — local-only (recommended, clean approval) vs full
-   (Source A, review risk). If local-only: add `#if APPSTORE` to compile out the
-   claude.ai login.
+5. ~~**App Store scope decision**~~ — ✅ **done: Option A (local-only).** `#if APPSTORE`
+   compiles out Source A (verified: WebKit not linked); `PrivacyInfo.xcprivacy`
+   bundled; listing copy in `docs/APP_STORE_LISTING.md`. GitHub build stays full A+B+C.
 6. **App Store Connect** — app record, category (Developer Tools), price Free, privacy
    label **"Data Not Collected"**, screenshots, set Dev Team in Xcode → Archive →
    upload → Submit. See `docs/APP_STORE.md`.

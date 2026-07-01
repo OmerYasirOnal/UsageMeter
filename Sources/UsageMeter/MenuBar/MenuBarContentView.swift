@@ -10,6 +10,8 @@ struct MenuBarContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
+            // Account (Source A) — compiled out of the local-only App Store build.
+            #if !APPSTORE
             if let account = model.snapshot.account, account.hasAnyMetric {
                 if let banner = limitBanner(account) { banner }
                 accountMetrics(account)
@@ -17,6 +19,7 @@ struct MenuBarContentView: View {
                 loggedOutAccount
             }
             Divider()
+            #endif
             claudeCodeSection
             if let block = model.snapshot.claudeCode.activeBlock {
                 blockSection(block)
@@ -84,10 +87,12 @@ struct MenuBarContentView: View {
             HStack {
                 SectionLabel(text: "Account")
                 Spacer()
+                #if !APPSTORE
                 Button("Log out") { Task { await model.logOut() } }
                     .buttonStyle(.borderless)
                     .font(.caption2)
                     .foregroundStyle(Theme.accent)
+                #endif
             }
             if let session = account.session { accountMetric("Current Session", key: "Session", session) }
             if let weekly = account.weekly { accountMetric("Weekly Limit", key: "Weekly", weekly) }

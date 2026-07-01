@@ -45,6 +45,10 @@ else
   echo "  (Resources/AppIcon.icns missing — run 'make icon'; building without an icon)"
 fi
 
+# Apple privacy manifest ("Data Not Collected"). Harmless in the ad-hoc build; the
+# App Store target bundles it via project.yml.
+[[ -f "Resources/PrivacyInfo.xcprivacy" ]] && cp "Resources/PrivacyInfo.xcprivacy" "${RES_DIR}/PrivacyInfo.xcprivacy"
+
 cat > "${CONTENTS}/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

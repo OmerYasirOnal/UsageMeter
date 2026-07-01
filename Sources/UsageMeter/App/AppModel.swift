@@ -16,8 +16,11 @@ final class AppModel: ObservableObject {
         didSet { applySettings(previous: oldValue) }
     }
 
+    #if !APPSTORE
     /// Source A bridge (login cookies + discovered endpoint). Observed by the UI.
+    /// Compiled out of the local-only App Store build (no claude.ai login).
     let accountAuth: AccountAuth
+    #endif
 
     private let engine: DataEngine
     private let notifier = UsageNotifier()
@@ -37,9 +40,14 @@ final class AppModel: ObservableObject {
     init() {
         ClaudeFolderAccess.restore()   // sandbox: reopen a previously-granted ~/.claude
         let loaded = AppSettings.load()
+
+        #if APPSTORE
+        // Local-only App Store build: no claude.ai login / unofficial endpoint
+        // (Source B + C only). Clean App Review, "100% private, no account needed".
+        let accountClient: any AccountUsageClient = LocalOnlyAccountUsageClient()
+        #else
         let auth = AccountAuth()
         self.accountAuth = auth
-
         // The live account client: captured-value fallback + auth reconciliation
         // are routed THROUGH the client so Source A stays behind the protocol.
         let accountClient = LiveAccountUsageClient(
@@ -50,6 +58,7 @@ final class AppModel: ObservableObject {
                 Task { @MainActor in auth?.setAuthenticated(ok) }
             }
         )
+        #endif
         self.engine = DataEngine(
             configuration: Self.mergedConfig(for: loaded),
             accountClient: accountClient
@@ -73,6 +82,7 @@ final class AppModel: ObservableObject {
             notifier.requestAuthorizationIfNeeded()
         }
 
+        #if !APPSTORE
         // Refresh when the login capture discovers an endpoint or captures usage.
         auth.$endpointInfo.dropFirst()
             .sink { [weak self] _ in Task { await self?.refresh() } }
@@ -80,6 +90,7 @@ final class AppModel: ObservableObject {
         auth.$lastCaptured.dropFirst()
             .sink { [weak self] _ in Task { await self?.refresh() } }
             .store(in: &cancellables)
+        #endif
 
         // The Mac's data goes stale while it sleeps — refresh as soon as it wakes
         // so the popover is current the moment the user looks (event-driven, not polling).
@@ -186,6 +197,7 @@ final class AppModel: ObservableObject {
                                    refreshInterval: settings.engineConfiguration.refreshInterval)
     }
 
+    #if !APPSTORE
     func logOut() async {
         await accountAuth.logout()
         await engine.clearAccountCache()   // don't let the 60s throttle serve the old account
@@ -197,6 +209,7 @@ final class AppModel: ObservableObject {
         snapshot = snap
         await refresh()
     }
+    #endif
 
     // MARK: - Settings application
 

@@ -1,3 +1,4 @@
+#if !APPSTORE
 import SwiftUI
 import WebKit
 import UsageMeterKit
@@ -289,3 +290,4 @@ struct AccountLoginScreen: View {
         .onDisappear { closeTask?.cancel() }
     }
 }
+#endif

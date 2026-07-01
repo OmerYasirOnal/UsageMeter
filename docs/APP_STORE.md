@@ -7,6 +7,15 @@ the **App Sandbox** (mandatory) and the **Source A (claude.ai login) review risk
 
 ## TL;DR — the one decision that shapes everything
 
+> ✅ **DECIDED (2026-07-01): Option A — local-only.** Implemented via `#if APPSTORE`
+> (defined only in the Xcode target's `SWIFT_ACTIVE_COMPILATION_CONDITIONS`). The
+> App Store build compiles out all of Source A — verified: **WebKit is not linked**
+> into the Release binary. `Resources/PrivacyInfo.xcprivacy` ("Data Not Collected")
+> is bundled. Listing copy is in [`APP_STORE_LISTING.md`](APP_STORE_LISTING.md).
+> The SwiftPM / GitHub build stays full A+B+C. What's left is all Apple-side:
+> Developer Program → set Team in Xcode → App Store Connect record + screenshots →
+> Archive → upload → Submit.
+
 **Will the App Store build include Source A (claude.ai login + the unofficial
 usage endpoint)?**
 

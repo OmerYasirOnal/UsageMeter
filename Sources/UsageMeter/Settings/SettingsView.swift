@@ -95,6 +95,8 @@ struct SettingsView: View {
                 .pickerStyle(.segmented)
             }
 
+            // Account (Source A) — compiled out of the local-only App Store build.
+            #if !APPSTORE
             Section("Account (Source A — claude.ai)") {
                 HStack {
                     if model.accountAuth.isAuthenticated {
@@ -116,6 +118,7 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            #endif
 
             Section("Privacy") {
                 Label("Local logs (Source B): UsageMeter reads only token counts, model names, and timestamps — never message content.",

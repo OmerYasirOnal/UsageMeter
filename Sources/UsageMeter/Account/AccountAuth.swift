@@ -1,3 +1,4 @@
+#if !APPSTORE
 import Foundation
 import Combine
 import WebKit
@@ -225,3 +226,4 @@ final class AccountAuth: ObservableObject, AccountSessionProviding, AccountEndpo
         try? encoder.encode(existing).write(to: fileURL, options: [.atomic])
     }
 }
+#endif

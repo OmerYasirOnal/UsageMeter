@@ -26,6 +26,8 @@ targets:
       - path: Sources/UsageMeterKit/Resources/pricing.json
         buildPhase: resources
       - path: Resources/Assets.xcassets
+      - path: Resources/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - package: UsageMeterKit
         product: UsageMeterKit
@@ -40,6 +42,9 @@ targets:
         CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Local-only App Store build: compiles out the claude.ai login (Source A).
+        # The SwiftPM / GitHub build does NOT define APPSTORE → full A+B+C.
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) APPSTORE"
         INFOPLIST_KEY_LSUIElement: YES
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
         INFOPLIST_KEY_NSHumanReadableCopyright: "UsageMeter — local, privacy-first Claude usage meter. MIT licensed."
