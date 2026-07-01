@@ -7,15 +7,17 @@ import Foundation
 @Suite struct ParserEdgeCaseTests {
     let parser = JSONLParser()
 
-    @Test func readsFlatCacheCreationAndIgnoresNestedObject() throws {
-        // We read the flat `cache_creation_input_tokens`. A nested `cache_creation`
-        // object (without the flat field) contributes 0 — documents intended behavior.
+    @Test func readsFlatCacheCreationAndFallsBackToNestedSplit() throws {
+        // The flat `cache_creation_input_tokens` aggregate is primary; when it is
+        // absent, the nested `cache_creation` TTL split carries the count so a
+        // future log-schema change can't silently zero cache writes.
         let flat = #"{"type":"assistant","requestId":"f","timestamp":"2026-06-30T10:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"cache_creation_input_tokens":200,"output_tokens":5}}}"#
         let nested = #"{"type":"assistant","requestId":"n","timestamp":"2026-06-30T10:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"cache_creation":{"ephemeral_5m_input_tokens":999},"output_tokens":5}}}"#
         let r1 = try #require(parser.parse(data: Data(flat.utf8), projectID: "p").first)
         let r2 = try #require(parser.parse(data: Data(nested.utf8), projectID: "p").first)
         #expect(r1.usage.cacheCreationTokens == 200)
-        #expect(r2.usage.cacheCreationTokens == 0)
+        #expect(r2.usage.cacheCreationTokens == 999)
+        #expect(r2.usage.cacheCreation1hTokens == 0)
     }
 
     @Test func intExtractionFloorsDoublesAndDefaultsNonNumeric() throws {

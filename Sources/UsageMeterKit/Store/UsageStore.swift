@@ -22,7 +22,9 @@ public struct CachedFile: Codable, Sendable, Equatable {
 /// service status (Source C) has its own `StatusStore`, keeping the sources
 /// decoupled in persistence too.
 public struct CacheData: Codable, Sendable, Equatable {
-    public static let currentVersion = 2
+    /// v3: `TokenUsage` gained `cacheCreation1hTokens` (cache_creation TTL split);
+    /// bumping forces one full re-parse so existing records pick up 1h data.
+    public static let currentVersion = 3
 
     public var version: Int
     /// path -> cached file.

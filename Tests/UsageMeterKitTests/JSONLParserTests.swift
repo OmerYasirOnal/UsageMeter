@@ -72,4 +72,27 @@ import Foundation
         let syn = try #require(records.first { $0.id == "req_syn" })
         #expect(syn.family == .unknown)
     }
+
+    @Test func readsCacheCreationTTLSplit() {
+        let line = #"{"type":"assistant","requestId":"r1","timestamp":"2026-07-01T10:00:00.000Z","message":{"model":"claude-fable-5","usage":{"input_tokens":10,"cache_creation_input_tokens":1000,"cache_creation":{"ephemeral_5m_input_tokens":100,"ephemeral_1h_input_tokens":900},"cache_read_input_tokens":5,"output_tokens":7}}}"#
+        let records = parser.parse(data: Data(line.utf8), projectID: "p")
+        #expect(records.count == 1)
+        #expect(records.first?.usage.cacheCreationTokens == 1000)
+        #expect(records.first?.usage.cacheCreation1hTokens == 900)
+    }
+
+    @Test func splitWithoutLegacyAggregateStillCountsCacheWrites() {
+        // If Claude Code ever drops the legacy aggregate, the split must carry.
+        let line = #"{"type":"assistant","requestId":"r2","timestamp":"2026-07-01T10:00:00.000Z","message":{"model":"claude-fable-5","usage":{"cache_creation":{"ephemeral_5m_input_tokens":100,"ephemeral_1h_input_tokens":900},"output_tokens":1}}}"#
+        let records = parser.parse(data: Data(line.utf8), projectID: "p")
+        #expect(records.first?.usage.cacheCreationTokens == 1000)
+        #expect(records.first?.usage.cacheCreation1hTokens == 900)
+    }
+
+    @Test func legacyOnlyCacheWriteHasZeroOneHourPortion() {
+        let line = #"{"type":"assistant","requestId":"r3","timestamp":"2026-07-01T10:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"cache_creation_input_tokens":500,"output_tokens":1}}}"#
+        let records = parser.parse(data: Data(line.utf8), projectID: "p")
+        #expect(records.first?.usage.cacheCreationTokens == 500)
+        #expect(records.first?.usage.cacheCreation1hTokens == 0)
+    }
 }

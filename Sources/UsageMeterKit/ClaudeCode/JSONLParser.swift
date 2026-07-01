@@ -10,8 +10,9 @@ import Foundation
 ///     happens in `DailyAggregator` so it spans files correctly.
 ///
 /// Privacy: the only fields ever read are `type`, `isSidechain`, `requestId`,
-/// `uuid`, `timestamp`, `message.model`, and `message.usage.*`. Message content
-/// (`message.content`) is never touched.
+/// `uuid`, `timestamp`, `message.model`, and `message.usage.*` (numeric token
+/// counts only, incl. the nested `usage.cache_creation` TTL split). Message
+/// content (`message.content`) is never touched.
 public struct JSONLParser: Sendable {
     public init() {}
 
@@ -74,9 +75,22 @@ public struct JSONLParser: Sendable {
                 return
             }
 
+            // Cache writes: prefer the legacy aggregate; the `cache_creation`
+            // split object (ephemeral_5m/1h) is the forward-compatible source
+            // and also tells us the 1h-TTL portion (billed 2x, not 1.25x).
+            let legacyCacheWrite = Self.int(usageDict["cache_creation_input_tokens"])
+            var oneHourCacheWrite = 0
+            var splitTotal = 0
+            if let split = usageDict["cache_creation"] as? [String: Any] {
+                oneHourCacheWrite = Self.int(split["ephemeral_1h_input_tokens"])
+                splitTotal = Self.int(split["ephemeral_5m_input_tokens"]) + oneHourCacheWrite
+            }
+            let cacheWriteTotal = legacyCacheWrite > 0 ? legacyCacheWrite : splitTotal
+
             let usage = TokenUsage(
                 inputTokens: Self.int(usageDict["input_tokens"]),
-                cacheCreationTokens: Self.int(usageDict["cache_creation_input_tokens"]),
+                cacheCreationTokens: cacheWriteTotal,
+                cacheCreation1hTokens: min(oneHourCacheWrite, cacheWriteTotal),
                 cacheReadTokens: Self.int(usageDict["cache_read_input_tokens"]),
                 outputTokens: Self.int(usageDict["output_tokens"])
             )
