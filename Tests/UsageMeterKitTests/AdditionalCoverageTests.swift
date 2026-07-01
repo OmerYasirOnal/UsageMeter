@@ -319,6 +319,41 @@ import Foundation
         _ = await engine.refreshAccount()        // cache cleared → fetches again
         #expect(client.calls == 2)
     }
+
+    @Test func transientAccountFailureServesLastGoodValueBounded() async throws {
+        let storeDir = fm.temporaryDirectory.appendingPathComponent("um-eng-grace-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fm.removeItem(at: storeDir) }
+        let t0 = Date(timeIntervalSince1970: 1_800_000_000)
+        let client = ScriptedAccountClient(results: [AccountUsage(session: UsageMetric(percent: 42))])
+        let engine = DataEngine(
+            configuration: EngineConfiguration(projectRoots: [], refreshInterval: 60),
+            recordStore: UsageStore(directory: storeDir),
+            statusStore: StatusStore(directory: storeDir),
+            statusClient: StubStatusClient(ServiceStatus(indicator: .none, description: "ok")),
+            accountClient: client,
+            pricing: .defaults,
+            calendar: utcCalendar()
+        )
+
+        let a = await engine.refreshAccount(now: t0)
+        #expect(a?.session?.displayPercent == 42)
+
+        // 2 minutes later the endpoint hiccups (client yields nil): the last
+        // good value is served with its ORIGINAL fetchedAt — not a blank UI.
+        let b = await engine.refreshAccount(now: t0.addingTimeInterval(120))
+        #expect(b?.session?.displayPercent == 42)
+        #expect(b?.fetchedAt == a?.fetchedAt)
+
+        // A failed fetch must not stamp the politeness floor — the next
+        // trigger retries the endpoint immediately.
+        _ = await engine.refreshAccount(now: t0.addingTimeInterval(125))
+        #expect(client.calls == 3)
+
+        // 40 minutes in, still failing: the grace window is over → local-only.
+        // (Keeps a dead 401 session from showing stale data forever.)
+        let c = await engine.refreshAccount(now: t0.addingTimeInterval(40 * 60))
+        #expect(c == nil)
+    }
 }
 
 /// Test double: returns a fixed usage and counts how many times the endpoint was hit.
@@ -332,6 +367,23 @@ final class CountingAccountClient: AccountUsageClient, @unchecked Sendable {
     func currentUsage() async throws -> AccountUsage? {
         lock.withLock { _calls += 1 }
         return usage
+    }
+}
+
+/// Test double: yields queued results in order (nil = failed / logged-out
+/// fetch), then keeps yielding nil. Counts endpoint hits.
+final class ScriptedAccountClient: AccountUsageClient, @unchecked Sendable {
+    private let lock = NSLock()
+    private var results: [AccountUsage?]
+    private var _calls = 0
+    var calls: Int { lock.withLock { _calls } }
+    init(results: [AccountUsage?]) { self.results = results }
+    var isAuthenticated: Bool { get async { true } }
+    func currentUsage() async throws -> AccountUsage? {
+        lock.withLock {
+            _calls += 1
+            return results.isEmpty ? nil : results.removeFirst()
+        }
     }
 }
 
