@@ -40,7 +40,7 @@ So we pivoted to local-only and **expired build 2** so it can't be submitted.
 ## Links
 
 - **Repo:** https://github.com/OmerYasirOnal/UsageMeter (public, MIT)
-- **Release v0.1.0:** downloadable `UsageMeter-macOS.zip` (ad-hoc signed → first launch
+- **Release v0.2.0 (Latest):** downloadable `UsageMeter-macOS.zip` (ad-hoc signed → first launch
   needs right-click ▸ Open, or `xattr -dr com.apple.quarantine`).
 - **Privacy policy:** `PRIVACY.md` + GitHub Pages
   https://omeryasironal.github.io/UsageMeter/privacy.html (verify it's live — it was
@@ -67,6 +67,17 @@ So we pivoted to local-only and **expired build 2** so it can't be submitted.
   (subscription value, not real spend; toggle in Settings).
 - **Open source** — README, CONTRIBUTING, MIT LICENSE, topics, v0.1.0 release.
 - **Demo mode** — `USAGEMETER_DEMO=1` / `make demo` injects synthetic data for shots.
+- **Confirmed-bug batch (2026-07-02)** — the 7 CONFIRMED bugs from the multi-agent
+  deep review fixed in one batch (branch `fix/deep-review-bug-batch`, plan in
+  `docs/superpowers/plans/2026-07-02-confirmed-bug-batch-fixes.md`): incremental
+  cache survives relaunches (mtime tolerance); no-op refreshes no longer rewrite
+  cache.json every tick (~13 MB/min saved); an empty scan (sandbox bookmark
+  failure) can no longer wipe cached stats; pricing updated to official rates
+  (opus 5/25, fable/mythos 10/50); `usage.cache_creation` TTL split parsed and 1h
+  writes priced ×2 (cache v2→v3, one-time full re-parse); transient account
+  failures serve the last good value for ≤30 min; auto-refresh survives the
+  sample-data toggle. Remaining review findings (UX/perf/distribution) are in the
+  review report, unfixed.
 - **Sandbox-ready** — `ClaudeFolderAccess` (security-scoped bookmark for `~/.claude`),
   additive (non-sandbox build unaffected); `UsageMeter.entitlements` provided.
 - **Xcode target** — `project.yml` (XcodeGen) → `make xcodeproj`; `xcodebuild`
@@ -81,12 +92,12 @@ So we pivoted to local-only and **expired build 2** so it can't be submitted.
   `ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon`). Both build paths verified to embed
   the icon (`make app` → `CFBundleIconFile`; `xcodebuild` → `Assets.car` +
   `CFBundleIconName`).
-- **113 tests pass** (`make test`). App installed at `/Applications/UsageMeter.app`.
+- **132 tests pass** (`make test`). App installed at `/Applications/UsageMeter.app`.
 
 ## Build / run cheatsheet
 
 ```bash
-make test       # 113 headless tests
+make test       # 132 headless tests
 make run        # build + launch UsageMeter.app
 make install    # build + copy to /Applications
 make demo       # launch with synthetic data (for screenshots)
