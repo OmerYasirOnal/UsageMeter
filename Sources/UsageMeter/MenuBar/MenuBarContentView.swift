@@ -11,6 +11,7 @@ import UsageMeterKit
 struct MenuBarContentView: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var folderGranted = ClaudeFolderAccess.isGranted
@@ -434,11 +435,14 @@ struct MenuBarContentView: View {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    /// In a menu-bar-only (accessory) app, `SettingsLink` can silently no-op
-    /// because the app isn't active — activate first, then send the action.
+    /// In a menu-bar-only (accessory) app the settings window won't take focus
+    /// unless the app is activated first. The legacy `showSettingsWindow:`
+    /// selector no longer resolves on current macOS — `openSettings` is the
+    /// supported action.
     private func openSettingsWindow() {
         NSApp.activate(ignoringOtherApps: true)
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        openSettings()
+        dismiss()
     }
 }
 
