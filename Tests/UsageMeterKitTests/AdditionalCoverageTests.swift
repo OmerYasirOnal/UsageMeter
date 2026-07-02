@@ -482,6 +482,47 @@ final class ScriptedAccountClient: AccountUsageClient, @unchecked Sendable {
         #expect(stats.total.outputTokens == 5)
     }
 
+    @Test func crossFileDuplicateIsStoredOnceWithDeterministicOwner() throws {
+        let (root, storeDir) = try makeRootAndStore()   // projA/s1.jsonl holds r1
+        defer { try? fm.removeItem(at: root); try? fm.removeItem(at: storeDir) }
+        // A resumed session in projB repeats r1 verbatim and adds r2.
+        let dupe = #"{"type":"assistant","requestId":"r1","timestamp":"2026-06-30T10:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":100}}}"#
+        let fresh = #"{"type":"assistant","requestId":"r2","timestamp":"2026-06-30T11:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":50}}}"#
+        let resumed = root.appendingPathComponent("projB/s2.jsonl")
+        try fm.createDirectory(at: resumed.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data((dupe + "\n" + fresh + "\n").utf8).write(to: resumed)
+
+        let store = UsageStore(directory: storeDir)
+        let source = LocalClaudeCodeSource(store: store, pricing: .defaults)
+        let stats = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_000))
+        #expect(stats.recordCount == 2)
+
+        let cache = UsageStore(directory: storeDir).load()
+        let stored = cache.files.values.flatMap(\.records)
+        #expect(stored.count == 2)                                   // r1 stored ONCE
+        let r1 = stored.first { $0.id == "r1" }
+        #expect(r1?.projectID == "projA")                            // sorted-path owner
+    }
+
+    @Test func removingTheOwnerFileRecoversTheSharedRecord() throws {
+        let (root, storeDir) = try makeRootAndStore()   // projA/s1.jsonl holds r1 (owner)
+        defer { try? fm.removeItem(at: root); try? fm.removeItem(at: storeDir) }
+        let dupe = #"{"type":"assistant","requestId":"r1","timestamp":"2026-06-30T10:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":100}}}"#
+        let resumed = root.appendingPathComponent("projB/s2.jsonl")
+        try fm.createDirectory(at: resumed.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data((dupe + "\n").utf8).write(to: resumed)
+
+        let source = LocalClaudeCodeSource(store: UsageStore(directory: storeDir), pricing: .defaults)
+        _ = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_000))
+
+        // Prune the owner. The suppressed copy in projB must be recovered
+        // (removals trigger a full rebuild), not silently lost.
+        try fm.removeItem(at: root.appendingPathComponent("projA/s1.jsonl"))
+        let stats = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_060))
+        #expect(stats.recordCount == 1)
+        #expect(stats.total.outputTokens == 100)
+    }
+
     @Test func genuineRemovalStillDropsRecords() throws {
         // The wipe guard must not break normal removal semantics: when the scan
         // still sees the root but one file is gone, its records are dropped.
