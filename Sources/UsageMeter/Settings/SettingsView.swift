@@ -263,6 +263,10 @@ private struct AccountSettingsTab: View {
 // MARK: - About
 
 private struct AboutSettingsTab: View {
+    @EnvironmentObject private var model: AppModel
+    @State private var checking = false
+    @State private var checkedOnce = false
+
     private var version: String {
         let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String
@@ -277,6 +281,30 @@ private struct AboutSettingsTab: View {
         Form {
             Section("UsageMeter") {
                 LabeledContent("Version", value: version)
+                // App Store builds update through the store — no self-check there.
+                #if !APPSTORE
+                HStack {
+                    if let update = model.availableUpdate {
+                        Link("Update available — v\(update.version)", destination: update.url)
+                            .foregroundStyle(Theme.accent)
+                    } else if checkedOnce && !checking {
+                        Label("Up to date", systemImage: "checkmark.circle")
+                            .foregroundStyle(Theme.ok).font(.callout)
+                    }
+                    Spacer()
+                    Button(checking ? "Checking…" : "Check for Updates") {
+                        checking = true
+                        Task { @MainActor in
+                            await model.checkForUpdatesNow()
+                            checking = false
+                            checkedOnce = true
+                        }
+                    }
+                    .disabled(checking)
+                }
+                Text("Checks the public GitHub releases page — one anonymous request, nothing about you is sent.")
+                    .font(.caption2).foregroundStyle(.secondary)
+                #endif
             }
             Section("Privacy") {
                 Label("Local logs (Source B): UsageMeter reads only token counts, model names, and timestamps — never message content.",

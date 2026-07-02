@@ -375,6 +375,14 @@ struct MenuBarContentView: View {
 
     private var footer: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if let update = model.availableUpdate {
+                Link(destination: update.url) {
+                    Label("Update available — v\(update.version)", systemImage: "arrow.down.circle")
+                        .font(.callout)
+                }
+                .foregroundStyle(Theme.accent)
+                .help("Opens the GitHub release page")
+            }
             HStack(spacing: 8) {
                 Button { openDashboard() } label: {
                     Label("Dashboard", systemImage: "chart.bar.xaxis")

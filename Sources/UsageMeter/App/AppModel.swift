@@ -12,6 +12,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var snapshot: EngineSnapshot = .empty
     @Published private(set) var isRefreshing = false
     @Published private(set) var hasLoadedOnce = false
+    /// A newer GitHub release than the running build (direct-download only).
+    @Published private(set) var availableUpdate: UpdateChecker.Release?
     @Published var settings: AppSettings {
         didSet { applySettings(previous: oldValue) }
     }
@@ -36,6 +38,8 @@ final class AppModel: ObservableObject {
     /// First observation seen this reset-cycle per metric, for the burn projection
     /// ("when will you run out"). In-memory: re-gathers ~15 min after a relaunch.
     private var cycleObs: [String: (cycleKey: String, pct: Double, date: Date)] = [:]
+    /// Last silent update check (in-memory: at most once per 24h per run).
+    private var lastUpdateCheckAt: Date?
 
     init() {
         ClaudeFolderAccess.restore()   // sandbox: reopen a previously-granted ~/.claude
@@ -161,6 +165,39 @@ final class AppModel: ObservableObject {
                               enabled: settings.notificationsEnabled)
         } while pendingRefresh
         isRefreshing = false
+        await maybeCheckForUpdates()
+    }
+
+    // MARK: - Update check (direct-download build only)
+
+    /// The running app's marketing version; nil for `swift run` (no bundle).
+    static var currentVersion: String? {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+    }
+
+    /// Silent daily check piggybacking on the refresh cadence. App Store builds
+    /// update through the store; unbundled dev runs have no version to compare.
+    private func maybeCheckForUpdates(force: Bool = false) async {
+        #if APPSTORE
+        return
+        #else
+        guard let current = Self.currentVersion else { return }
+        let now = Date()
+        if !force, let last = lastUpdateCheckAt,
+           now.timeIntervalSince(last) < UpdateChecker.minInterval { return }
+        lastUpdateCheckAt = now
+        let release = await UpdateChecker().latestRelease()
+        if let release, UpdateChecker.isNewer(release.version, than: current) {
+            availableUpdate = release
+        } else {
+            availableUpdate = nil
+        }
+        #endif
+    }
+
+    /// About-tab "Check for Updates" — bypasses the daily throttle.
+    func checkForUpdatesNow() async {
+        await maybeCheckForUpdates(force: true)
     }
 
     // MARK: - Burn projection ("when will you run out")
