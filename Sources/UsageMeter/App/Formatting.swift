@@ -17,15 +17,39 @@ enum Formatting {
     }
 
     /// The Claude Code "API value" estimate (always USD — API rates are USD),
-    /// locale-formatted with grouping to match `money` (e.g. "$11.606,64"), or
-    /// "n/a" when unpriced. This is the value your tokens would cost on the API,
-    /// NOT money you're billed — see the popover/Settings copy.
+    /// or "n/a" when unpriced. Formatted with en_US separators on purpose: a
+    /// USD estimate rendered as "$5.921,79" on comma-decimal locales misreads
+    /// as $5.92. Real account-currency spend (`money`) stays locale-aware.
     static func cost(_ value: Double?) -> String {
         guard let value else { return "n/a" }
-        if value > 0 && value < 0.01 {
-            return "<" + money(0.01, currency: "USD")
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.currencyCode = "USD"
+        f.locale = Locale(identifier: "en_US")
+        if value > 0 && value < 0.01 { return "<$0.01" }
+        return f.string(from: value as NSNumber) ?? String(format: "$%.2f", value)
+    }
+
+    /// Ultra-compact cost for the menu bar ("$112", "$1.3K") — fixed shape so
+    /// the status item width stays stable between refreshes.
+    static func menuBarCost(_ value: Double) -> String {
+        if value >= 1000 { return String(format: "$%.1fK", value / 1000) }
+        return "$\(Int(value.rounded()))"
+    }
+
+    /// Chart-axis token count without decimal noise: "400M", "1.5M", "34K".
+    static func axisTokens(_ count: Int) -> String {
+        func trim(_ v: Double, _ suffix: String) -> String {
+            v == v.rounded()
+                ? String(format: "%.0f%@", v, suffix)
+                : String(format: "%.1f%@", v, suffix)
         }
-        return money(value, currency: "USD")
+        let n = Double(count)
+        switch count {
+        case 1_000_000...: return trim(n / 1_000_000, "M")
+        case 1_000...: return trim(n / 1_000, "K")
+        default: return "\(count)"
+        }
     }
 
     /// Real money in the account's currency (e.g. "$0.00", "€3.20").
@@ -81,11 +105,11 @@ enum Formatting {
         return f.string(from: date)
     }
 
-    /// "Mon, 07:59".
+    /// "Mon, 07:59" (or "Mon, 7:59 AM" — respects the 12/24-hour preference).
     static func weekdayTime(_ date: Date) -> String {
         let f = DateFormatter()
         f.locale = .current
-        f.dateFormat = "EEE, HH:mm"
+        f.setLocalizedDateFormatFromTemplate("EEEjmm")
         return f.string(from: date)
     }
 

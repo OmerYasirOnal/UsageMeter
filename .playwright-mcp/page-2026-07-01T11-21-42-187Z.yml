@@ -1,0 +1,140 @@
+- generic [ref=f2e1]:
+  - banner "App Store Connect" [ref=f2e3]:
+    - generic [ref=f2e4]:
+      - heading "App Store Connect" [level=1] [ref=f2e9]:
+        - link "App Store Connect" [ref=f2e10] [cursor=pointer]:
+          - /url: /
+      - navigation "Global":
+        - generic:
+          - list:
+            - listitem [ref=f2e11]:
+              - link "Apps" [ref=f2e12] [cursor=pointer]:
+                - /url: /apps
+            - listitem [ref=f2e13]:
+              - link "Trends" [ref=f2e14] [cursor=pointer]:
+                - /url: /trends
+            - listitem [ref=f2e15]:
+              - link "Reports" [ref=f2e16] [cursor=pointer]:
+                - /url: /itc/payments_and_financial_reports
+            - listitem [ref=f2e17]:
+              - link "Business" [ref=f2e18] [cursor=pointer]:
+                - /url: /business
+            - listitem [ref=f2e19]:
+              - link "Users and Access" [ref=f2e20] [cursor=pointer]:
+                - /url: /access/users
+      - button "Ömer Yasir Önal Omer Yasir Onal Account name menu" [ref=f2e21] [cursor=pointer]:
+        - generic:
+          - img
+  - generic [ref=f2e24]:
+    - button "Apps menu, UsageMeter, selected" [ref=f2e28] [cursor=pointer]:
+      - generic [ref=f2e29]:
+        - generic "UsageMeter" [ref=f2e30]:
+          - img "UsageMeter" [ref=f2e31]
+        - generic [ref=f2e33]: UsageMeter
+      - img [ref=f2e35]
+    - navigation "Apps" [ref=f2e38]:
+      - generic [ref=f2e39] [cursor=pointer]:
+        - generic [ref=f2e40]: Distribution
+        - img [ref=f2e42]
+      - list:
+        - listitem:
+          - link "Distribution":
+            - /url: /apps/6786227263/distribution
+        - listitem:
+          - link "Analytics":
+            - /url: /apps/6786227263/analytics
+        - listitem:
+          - link "TestFlight":
+            - /url: /teams/3894e346-c886-4ca5-91b7-773aaa6e85bd/apps/6786227263/testflight
+        - listitem:
+          - link "Xcode Cloud":
+            - /url: /teams/3894e346-c886-4ca5-91b7-773aaa6e85bd/apps/6786227263/ci
+  - generic [ref=f2e47]:
+    - main [ref=f2e48]:
+      - generic [ref=f2e55]:
+        - generic [ref=f2e57]:
+          - heading "App Privacy" [level=2] [ref=f2e60]:
+            - button "App Privacy" [ref=f2e61] [cursor=pointer]:
+              - text: App Privacy
+              - img [ref=f2e62]
+          - button "Publish" [disabled] [ref=f2e65]
+        - separator [ref=f2e66]
+        - generic [ref=f2e67]:
+          - generic [ref=f2e68]:
+            - generic [ref=f2e69]:
+              - heading "Privacy Policy" [level=3] [ref=f2e70]
+              - button "Edit" [ref=f2e71] [cursor=pointer]
+            - generic [ref=f2e73]:
+              - button "English (U.S.)" [disabled] [ref=f2e74]
+              - button "?" [ref=f2e77] [cursor=pointer]
+          - generic [ref=f2e78]:
+            - generic [ref=f2e79]:
+              - generic [ref=f2e81]:
+                - generic [ref=f2e82]: Privacy Policy URL
+                - button "More information" [ref=f2e84] [cursor=pointer]: "?"
+              - paragraph [ref=f2e85]: https://omeryasironal.github.io/UsageMeter/privacy.html
+            - generic [ref=f2e86]:
+              - generic [ref=f2e158]:
+                - generic [ref=f2e159]: User Privacy Choices URL
+                - paragraph [ref=f2e160]: (Optional)
+                - button "More information" [ref=f2e162] [cursor=pointer]: "?"
+              - paragraph [ref=f2e92]: –
+        - separator [ref=f2e93]
+        - generic [ref=f2e95]:
+          - paragraph [ref=f2e96]:
+            - generic [ref=f2e97]:
+              - paragraph [ref=f2e98]: The App Store is designed to be a safe and trusted place for people to discover apps from talented developers just like you. Your app can influence culture and change lives, so that's why we're counting on you to help us protect users' privacy.
+              - paragraph [ref=f2e99]: After clicking Get Started, you'll be asked to provide some information about your app's data collection practices. This information will appear on your app's product page, where users can see what data your app collects and how it's used.
+          - button "Get Started" [ref=f2e101] [cursor=pointer]
+    - dialog "Data Collection" [ref=f2e122]:
+      - document [ref=f2e123]:
+        - generic [ref=f2e124]:
+          - heading "Data Collection" [level=2] [ref=f2e125]
+          - generic [ref=f2e126]:
+            - paragraph [ref=f2e127]:
+              - generic [ref=f2e128]:
+                - paragraph [ref=f2e129]: Thanks for helping users understand your app's privacy practices. Remember that you're responsible for any third-party code that is added to your app, so if your third-party partners collect data from your app, you must represent that in your responses.
+                - list [ref=f2e130]:
+                  - listitem [ref=f2e131]: “Collect” refers to transmitting data off the device in a way that allows you and/or your third-party partners to access it for a period longer than necessary to service the transmitted request in real time.
+                  - listitem [ref=f2e132]: “Third-party partners” include analytics tools, advertising networks, third-party SDKs, or other external vendors whose code you have added to the app.
+                - paragraph [ref=f2e133]:
+                  - text: You can
+                  - link "view the full list of questions" [ref=f2e134] [cursor=pointer]:
+                    - /url: https://developer.apple.com/support/app-privacy-on-the-app-store?
+                  - text: at any time.
+            - separator [ref=f2e135]
+            - generic [ref=f2e136]:
+              - paragraph [ref=f2e137]: Do you or your third-party partners collect data from this app?
+              - generic [ref=f2e139]:
+                - generic [ref=f2e140]:
+                  - radio "Yes, we collect data from this app" [ref=f2e141]
+                  - generic [ref=f2e144]:
+                    - strong [ref=f2e145]: "Yes"
+                    - text: ", we collect data from this app"
+                - generic [ref=f2e146]:
+                  - radio "No, we do not collect data from this app" [checked] [active] [ref=f2e147]
+                  - generic [ref=f2e150]:
+                    - strong [ref=f2e151]: "No"
+                    - text: ", we do not collect data from this app"
+        - generic [ref=f2e153]:
+          - button "Cancel" [ref=f2e155] [cursor=pointer]
+          - button "Save" [ref=f2e157] [cursor=pointer]
+  - contentinfo [ref=f2e103]:
+    - generic [ref=f2e104]:
+      - list [ref=f2e105]:
+        - listitem [ref=f2e106]:
+          - link "App Store Connect" [ref=f2e107] [cursor=pointer]:
+            - /url: /apps
+      - list [ref=f2e108]:
+        - listitem [ref=f2e109]: Copyright © 2026 Apple Inc. All rights reserved. |
+        - listitem [ref=f2e110]:
+          - link "Terms of Service" [ref=f2e111] [cursor=pointer]:
+            - /url: /WebObjects/iTunesConnect.woa/wa/termsOfService
+          - text: "|"
+        - listitem [ref=f2e112]:
+          - link "Privacy Policy" [ref=f2e113] [cursor=pointer]:
+            - /url: https://www.apple.com/legal/privacy
+          - text: "|"
+        - listitem [ref=f2e114]:
+          - link "Contact Us" [ref=f2e115] [cursor=pointer]:
+            - /url: /contact-us

@@ -23,8 +23,11 @@ struct MenuBarLabel: View {
             Image(systemName: "gauge.with.dots.needle.50percent")
             if model.settings.showPercentInMenuBar, let session = model.snapshot.account?.session {
                 Text("\(session.displayPercent)%").monospacedDigit()
-            } else if model.settings.showCostInMenuBar {
-                Text(Formatting.cost(model.snapshot.claudeCode.todayEstimatedCost))
+            } else if model.settings.showCostInMenuBar,
+                      let today = model.snapshot.claudeCode.todayEstimatedCost {
+                // Compact + monospaced so the status item doesn't change width
+                // every refresh and nudge neighboring icons.
+                Text(Formatting.menuBarCost(today)).monospacedDigit()
             }
         }
         .foregroundStyle(tint)
@@ -43,10 +46,20 @@ struct MenuBarLabel: View {
         }
     }
 
+    /// Menu-bar color means "act now": template-neutral all day, warning/danger
+    /// only when the session limit nears, status color only during an incident.
+    /// A permanently-colored item clashes with neighboring template icons and
+    /// trains the eye to ignore it.
     private var tint: Color {
         if let session = model.snapshot.account?.session {
-            return Theme.usageColor(session.percent)
+            if session.percent >= 90 { return Theme.danger }
+            if session.percent >= 75 { return Theme.warning }
         }
-        return model.snapshot.status?.indicator.color ?? .primary
+        switch model.snapshot.status?.indicator {
+        case .minor?, .major?, .critical?:
+            return model.snapshot.status?.indicator.color ?? .primary
+        default:
+            return .primary
+        }
     }
 }

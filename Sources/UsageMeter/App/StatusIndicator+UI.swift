@@ -2,15 +2,16 @@ import SwiftUI
 import UsageMeterKit
 
 extension StatusIndicator {
-    /// Dot color for the status badge.
+    /// Dot color for the status badge — mapped through Theme so the whole app
+    /// shares one semantic scale (and a palette swap stays a one-file change).
     var color: Color {
         switch self {
-        case .none: return .green
-        case .minor: return .yellow
-        case .major: return .orange
-        case .critical: return .red
-        case .maintenance: return .blue
-        case .unknown: return .gray
+        case .none: return Theme.ok
+        case .minor: return Theme.warning
+        case .major: return Theme.data
+        case .critical: return Theme.danger
+        case .maintenance: return Theme.maintenance
+        case .unknown: return .secondary
         }
     }
 

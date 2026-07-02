@@ -133,7 +133,7 @@ struct SettingsView: View {
                 HStack {
                     if model.accountAuth.isAuthenticated {
                         Label("Signed in", systemImage: "checkmark.seal.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Theme.ok)
                         Spacer()
                         Button("Log out") { Task { await model.logOut() } }
                     } else {

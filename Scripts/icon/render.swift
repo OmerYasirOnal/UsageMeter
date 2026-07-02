@@ -13,10 +13,13 @@ let cs = CGColorSpace(name: CGColorSpace.sRGB)!
 func col(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat, _ a: CGFloat = 1) -> CGColor {
     CGColor(colorSpace: cs, components: [r, g, b, a])!
 }
-// Claude coral accent = sRGB(0.851, 0.467, 0.341) = #D97757
-let coralTop    = col(0.94, 0.57, 0.44)   // lighter top
-let coralBottom = col(0.74, 0.35, 0.24)   // deeper bottom
-let coralMid    = col(0.851, 0.467, 0.341)
+// "Kiln" fired terracotta — the app's own data-ink identity (deliberately NOT
+// Claude's coral #D97757; the gauge shape is the brand, the borrowed color was
+// the liability). Top #F29E54 → mid #C2410C → bottom #7C2D0C.
+let coralTop    = col(0.949, 0.620, 0.329)   // #F29E54 lighter top
+let coralBottom = col(0.486, 0.176, 0.047)   // #7C2D0C deeper bottom
+let coralMid    = col(0.761, 0.255, 0.047)   // #C2410C
+
 let white       = col(1, 1, 1)
 
 // Intended output pixel size of the current render (so glyphs can adapt for

@@ -87,12 +87,11 @@ struct ActivityGrid: View {
     }
 
     private func color(for level: Int) -> Color {
+        // Opaque, per-appearance stops (Theme.heat): translucent accent steps
+        // shifted with the card behind them and vanished in dark mode.
         switch level {
-        case 1: return Theme.accent.opacity(0.30)
-        case 2: return Theme.accent.opacity(0.52)
-        case 3: return Theme.accent.opacity(0.76)
-        case 4: return Theme.accent
-        default: return Color.primary.opacity(0.07)
+        case 1...4: return Theme.heat[level - 1]
+        default: return Theme.heatEmpty
         }
     }
 }

@@ -3,9 +3,16 @@ import AppKit
 import UsageMeterKit
 
 /// The popover shown when the menu-bar item is clicked.
+///
+/// Hierarchy is built for a 2-second glance: ONE hero (Current Session % with a
+/// big reset countdown), compact rows for the slow-moving weekly limits, then
+/// today's Claude Code numbers. Static/educational copy lives in tooltips and
+/// Settings, not on the glance surface.
 struct MenuBarContentView: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var folderGranted = ClaudeFolderAccess.isGranted
 
     var body: some View {
@@ -23,7 +30,11 @@ struct MenuBarContentView: View {
             Divider()
             #endif
             claudeCodeSection
-            if let block = model.snapshot.claudeCode.activeBlock {
+            // The 5-hour block IS the session window — showing both duplicates
+            // the countdown. Keep it as the session proxy when there's no
+            // account metric (local-only build / logged out).
+            if model.snapshot.account?.session == nil,
+               let block = model.snapshot.claudeCode.activeBlock {
                 blockSection(block)
             }
             Divider()
@@ -34,6 +45,13 @@ struct MenuBarContentView: View {
         .fixedSize(horizontal: false, vertical: true)
         .tint(Theme.accent)
         .preferredColorScheme(model.settings.appearance.colorScheme)
+        // Esc closes the popover, like every native menu-bar window.
+        .background(
+            Button("") { dismiss() }
+                .keyboardShortcut(.cancelAction)
+                .opacity(0)
+                .accessibilityHidden(true)
+        )
         // Keep the data live *while the popover is open*: refresh on appear, then
         // every 60s (the app's polite floor) until it closes. SwiftUI cancels this
         // task when the view disappears, so we never poll in the background here.
@@ -49,28 +67,41 @@ struct MenuBarContentView: View {
     // MARK: - Header
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 9) {
-                Image(systemName: "gauge.with.dots.needle.50percent")
-                    .font(.title3)
-                    .foregroundStyle(Theme.accent)
-                Text("UsageMeter").font(.headline)
-                Spacer()
-                iconButton("chart.bar.xaxis", help: "Open dashboard") { openDashboard() }
-                iconButton("gearshape", help: "Settings") { openSettingsWindow() }
-                if model.isRefreshing {
-                    ProgressView()
-                        .controlSize(.small)
-                        .frame(width: 26, height: 26)
-                } else {
-                    iconButton("arrow.clockwise", help: "Refresh now") {
-                        Task { await model.refresh() }
-                    }
+        HStack(spacing: 8) {
+            Image(systemName: "gauge.with.dots.needle.50percent")
+                .font(.title3)
+                .foregroundStyle(Theme.data)
+            Text("UsageMeter").font(.headline)
+            // Status collapses to a dot; the text row appears only during an
+            // incident (see below) — "Operational" doesn't need words.
+            Circle()
+                .fill(statusIndicator.color)
+                .frame(width: 7, height: 7)
+                .help(model.snapshot.status?.description ?? "Status unavailable")
+                .accessibilityLabel("Claude status: \(statusIndicator.shortLabel)")
+            Spacer()
+            iconButton("gearshape", help: "Settings (⌘,)") { openSettingsWindow() }
+                .keyboardShortcut(",", modifiers: .command)
+            if model.isRefreshing {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(width: 26, height: 26)
+            } else {
+                iconButton("arrow.clockwise", help: "Refresh now (⌘R)") {
+                    Task { await model.refresh() }
                 }
+                .keyboardShortcut("r", modifiers: .command)
             }
+        }
+    }
+
+    /// Incident banner row — only when something is actually wrong.
+    @ViewBuilder
+    private var statusIncidentRow: some View {
+        if statusIndicator != .none && statusIndicator != .unknown {
             HStack(spacing: 5) {
                 Circle().fill(statusIndicator.color).frame(width: 7, height: 7)
-                Text(model.snapshot.status?.description ?? "Status unavailable")
+                Text(model.snapshot.status?.description ?? statusIndicator.shortLabel)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -90,6 +121,7 @@ struct MenuBarContentView: View {
             HStack {
                 SectionLabel(text: "Account")
                 Spacer()
+                statusIncidentRow
                 #if !APPSTORE
                 Button("Log out") { Task { await model.logOut() } }
                     .buttonStyle(.borderless)
@@ -97,10 +129,10 @@ struct MenuBarContentView: View {
                     .foregroundStyle(Theme.accent)
                 #endif
             }
-            if let session = account.session { accountMetric("Current Session", key: "Session", session) }
-            if let weekly = account.weekly { accountMetric("Weekly Limit", key: "Weekly", weekly) }
-            if let opus = account.weeklyOpus { accountMetric("Weekly Opus", key: "Weekly Opus", opus) }
-            if let spend = account.spend {
+            if let session = account.session { sessionHero(session) }
+            if let weekly = account.weekly { compactMetric("Weekly Limit", key: "Weekly", weekly) }
+            if let opus = account.weeklyOpus { compactMetric("Weekly Opus", key: "Weekly Opus", opus) }
+            if let spend = account.spend, spend.usedAmount > 0 {
                 HStack {
                     Text("Pay-as-you-go used").font(.caption).foregroundStyle(.secondary)
                     Spacer()
@@ -111,27 +143,73 @@ struct MenuBarContentView: View {
         }
     }
 
-    private func accountMetric(_ title: String, key: String, _ metric: UsageMetric) -> some View {
+    /// The ONE hero: session % + a countdown you can read across the room.
+    /// "When do I get budget back" is the question — it gets hero billing too.
+    private func sessionHero(_ metric: UsageMetric) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
-            Text("\(metric.displayPercent)%")
-                .font(.system(size: 30, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(Theme.usageColor(metric.percent))
-                .contentTransition(.numericText())
-                .animation(.snappy, value: metric.displayPercent)
-            UsageBar(percent: metric.percent, color: Theme.usageColor(metric.percent))
-            // Tick once a minute so the "Resets in 2h 8m" countdown and the burn
-            // projection stay live while the popover is open.
+            Text("Current Session").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
             TimelineView(.periodic(from: .now, by: 60)) { context in
-                VStack(alignment: .leading, spacing: 3) {
-                    if let reset = Formatting.resetDescription(to: metric.resetsAt, now: context.date) {
-                        Text("Resets \(reset)").font(.caption).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("\(metric.displayPercent)%")
+                            .font(.system(size: 30, weight: .bold, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundStyle(Theme.numeralColor(metric.percent))
+                            .contentTransition(reduceMotion ? .identity : .numericText())
+                            .animation(reduceMotion ? nil : .snappy, value: metric.displayPercent)
+                        Spacer()
+                        if let resetsAt = metric.resetsAt,
+                           let cd = Formatting.countdown(to: resetsAt, now: context.date) {
+                            VStack(alignment: .trailing, spacing: 1) {
+                                Text(cd)
+                                    .font(.title3.weight(.semibold)).monospacedDigit()
+                                Text("until reset (\(Formatting.clockTime(resetsAt)))")
+                                    .font(.caption2).foregroundStyle(.secondary)
+                            }
+                        }
                     }
+                    UsageBar(percent: metric.percent, color: Theme.usageColor(metric.percent))
+                    projectionLine(model.projection(for: "Session", metric, now: context.date))
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Current session")
+        .accessibilityValue(accessibilityMetricValue(metric))
+    }
+
+    /// Weekly limits move slowly — one compact line each, escalation only.
+    private func compactMetric(_ title: String, key: String, _ metric: UsageMetric) -> some View {
+        TimelineView(.periodic(from: .now, by: 60)) { context in
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(title).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                    Spacer()
+                    if let reset = Formatting.resetDescription(to: metric.resetsAt, now: context.date) {
+                        Text("resets \(reset)").font(.caption2).foregroundStyle(.tertiary)
+                    }
+                    Text("\(metric.displayPercent)%")
+                        .font(.callout.weight(.semibold)).monospacedDigit()
+                        .foregroundStyle(Theme.numeralColor(metric.percent))
+                }
+                UsageBar(percent: metric.percent, color: Theme.usageColor(metric.percent), height: 5)
+                // Compact rows surface the projection only when it's a warning.
+                if case .exhausts = model.projection(for: key, metric, now: context.date).status {
                     projectionLine(model.projection(for: key, metric, now: context.date))
                 }
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue(accessibilityMetricValue(metric))
+    }
+
+    private func accessibilityMetricValue(_ metric: UsageMetric) -> String {
+        var value = "\(metric.displayPercent) percent used"
+        if let reset = Formatting.resetDescription(to: metric.resetsAt) {
+            value += ", resets \(reset)"
+        }
+        return value
     }
 
     /// "When will you run out" — the burn projection for one metric.
@@ -178,7 +256,11 @@ struct MenuBarContentView: View {
 
     private var loggedOutAccount: some View {
         VStack(alignment: .leading, spacing: 8) {
-            SectionLabel(text: "Account")
+            HStack {
+                SectionLabel(text: "Account")
+                Spacer()
+                statusIncidentRow
+            }
             Button { openLogin() } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "person.crop.circle.badge.plus")
@@ -205,25 +287,25 @@ struct MenuBarContentView: View {
     private var claudeCodeSection: some View {
         let cc = model.snapshot.claudeCode
         return VStack(alignment: .leading, spacing: 8) {
-            SectionLabel(text: "Claude Code — Today")
+            HStack {
+                SectionLabel(text: "Claude Code — Today")
+                Spacer()
+                #if APPSTORE
+                statusIncidentRow
+                #endif
+            }
             HStack {
                 metric(title: "Tokens", value: Formatting.tokens(cc.today.totalTokens))
                 Spacer()
                 if model.settings.showApiValue {
-                    metric(title: "API value", value: Formatting.cost(cc.todayEstimatedCost))
+                    metric(title: "API value", value: Formatting.cost(cc.todayEstimatedCost),
+                           help: "What your tokens would cost at pay-as-you-go API rates — not money you're billed.")
                 }
             }
             if cc.recordCount == 0 {
                 emptyState
-            } else if model.settings.showApiValue {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(cc.sessionCount) sessions · all-time ≈ \(Formatting.cost(cc.totalEstimatedCost))")
-                    Text("“API value” isn’t money you’re billed — it’s what your tokens would cost at API rates.")
-                }
-                .font(.caption2).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
             } else {
-                Text("\(cc.sessionCount) sessions")
+                Text("\(cc.sessionCount) sessions · all-time ≈ \(model.settings.showApiValue ? Formatting.cost(cc.totalEstimatedCost) : Formatting.tokens(cc.total.totalTokens))")
                     .font(.caption2).foregroundStyle(.secondary)
             }
         }
@@ -270,7 +352,13 @@ struct MenuBarContentView: View {
 
     private func blockSection(_ block: UsageBlock) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            SectionLabel(text: "Current 5-hour block (local estimate)")
+            HStack(spacing: 4) {
+                SectionLabel(text: "Current 5-hour block")
+                Image(systemName: "info.circle")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.tertiary)
+                    .help("Estimated locally from Claude Code logs — matches Claude's 5-hour billing windows.")
+            }
             HStack {
                 metric(title: "Tokens", value: Formatting.tokens(block.totalTokens))
                 Spacer()
@@ -287,49 +375,54 @@ struct MenuBarContentView: View {
 
     private var footer: some View {
         VStack(alignment: .leading, spacing: 10) {
-            TimelineView(.periodic(from: .now, by: 60)) { context in
-                // When logged in, "Updated" reflects the ACCOUNT fetch time (the % is
-                // what the user cares about), not the local log scan (which never
-                // fails and would always read "just now").
-                let stamp = model.snapshot.account?.fetchedAt ?? model.snapshot.lastUpdated
-                Text("Updated \(Formatting.relativeUpdated(stamp, now: context.date))")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
             HStack(spacing: 8) {
                 Button { openDashboard() } label: {
                     Label("Dashboard", systemImage: "chart.bar.xaxis")
                 }
+                .keyboardShortcut("d", modifiers: .command)
                 Spacer()
+                TimelineView(.periodic(from: .now, by: 60)) { context in
+                    // When logged in, "Updated" reflects the ACCOUNT fetch time (the
+                    // % is what the user cares about), not the local log scan (which
+                    // never fails and would always read "just now").
+                    let stamp = model.snapshot.account?.fetchedAt ?? model.snapshot.lastUpdated
+                    Text("Updated \(Formatting.relativeUpdated(stamp, now: context.date))")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
                 Button("Quit") { NSApp.terminate(nil) }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .keyboardShortcut("q", modifiers: .command)
             }
             .font(.callout)
-            Text("Privacy: only token counts, model, and timestamps are read — never your messages.")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     // MARK: - Helpers
 
     private func iconButton(_ name: String, help: String, _ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: name)
-                .font(.system(size: 13, weight: .medium))
-                .frame(width: 26, height: 26)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.borderless)
-        .foregroundStyle(.secondary)
-        .help(help)
+        HoverIconButton(name: name, help: help, action: action)
     }
 
-    private func metric(title: String, value: String) -> some View {
+    private func metric(title: String, value: String, help: String? = nil) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(value).font(.title3.weight(.semibold)).monospacedDigit()
-            Text(title).font(.caption2).foregroundStyle(.secondary)
+            if let help {
+                HStack(spacing: 3) {
+                    Text(title).font(.caption2).foregroundStyle(.secondary)
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.tertiary)
+                }
+                .help(help)
+            } else {
+                Text(title).font(.caption2).foregroundStyle(.secondary)
+            }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue(value)
     }
 
     private func openDashboard() {
@@ -347,5 +440,29 @@ struct MenuBarContentView: View {
     private func openSettingsWindow() {
         NSApp.activate(ignoringOtherApps: true)
         NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+    }
+}
+
+/// Borderless icon button with a hover highlight (borderless buttons on macOS
+/// give no hover feedback of their own) and a proper VoiceOver name.
+private struct HoverIconButton: View {
+    let name: String
+    let help: String
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: name)
+                .font(.system(size: 13, weight: .medium))
+                .frame(width: 26, height: 26)
+                .background(Circle().fill(Color.primary.opacity(hovering ? 0.08 : 0)))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .foregroundStyle(.secondary)
+        .onHover { hovering = $0 }
+        .help(help)
+        .accessibilityLabel(help)
     }
 }
