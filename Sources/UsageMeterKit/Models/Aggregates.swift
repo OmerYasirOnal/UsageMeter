@@ -61,6 +61,22 @@ public struct DailyUsage: Codable, Sendable, Equatable, Identifiable {
 }
 
 /// The full Source-B summary the UI consumes.
+/// One (day, model family) bucket — lets the UI recompute "By model" for any
+/// date range without another engine pass.
+public struct DayModelUsage: Codable, Sendable, Equatable {
+    public var day: String          // "yyyy-MM-dd"
+    public var family: ModelFamily
+    public var usage: TokenUsage
+    public var estimatedCost: Double?
+
+    public init(day: String, family: ModelFamily, usage: TokenUsage, estimatedCost: Double?) {
+        self.day = day
+        self.family = family
+        self.usage = usage
+        self.estimatedCost = estimatedCost
+    }
+}
+
 public struct ClaudeCodeStats: Codable, Sendable, Equatable {
     /// All-time totals across the scanned logs.
     public var total: TokenUsage
@@ -86,6 +102,9 @@ public struct ClaudeCodeStats: Codable, Sendable, Equatable {
     /// days) — powers the day-end forecast. Nil until enough history exists.
     public var intradayProfile: IntradayProfile?
 
+    /// Per-day per-model buckets (range-scoped "By model"; sorted by day).
+    public var dailyByModel: [DayModelUsage]
+
     public init(
         total: TokenUsage = .zero,
         totalEstimatedCost: Double? = nil,
@@ -97,7 +116,8 @@ public struct ClaudeCodeStats: Codable, Sendable, Equatable {
         sessionCount: Int = 0,
         recordCount: Int = 0,
         activeBlock: UsageBlock? = nil,
-        intradayProfile: IntradayProfile? = nil
+        intradayProfile: IntradayProfile? = nil,
+        dailyByModel: [DayModelUsage] = []
     ) {
         self.total = total
         self.totalEstimatedCost = totalEstimatedCost
@@ -110,6 +130,7 @@ public struct ClaudeCodeStats: Codable, Sendable, Equatable {
         self.recordCount = recordCount
         self.activeBlock = activeBlock
         self.intradayProfile = intradayProfile
+        self.dailyByModel = dailyByModel
     }
 
     public static let empty = ClaudeCodeStats()

@@ -465,10 +465,18 @@ struct DashboardView: View {
     // MARK: - By model
 
     private var byModelCard: some View {
-        let models = model.snapshot.claudeCode.byModel
+        // Range-coherent: follows the Usage History range picker (all-time list
+        // was silently shown for every range before).
+        let models = range == .all
+            ? model.snapshot.claudeCode.byModel
+            : DashboardMetrics.modelUsage(model.snapshot.claudeCode.dailyByModel, range: range)
         let maxTokens = max(1, models.map { $0.usage.totalTokens }.max() ?? 1)
         return VStack(alignment: .leading, spacing: 12) {
-            Text("By model").font(.title3.bold())
+            HStack(spacing: 6) {
+                Text("By model").font(.title3.bold())
+                Text(range == .all ? "· all time" : "· last \(range.label.lowercased())")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             ForEach(models) { m in
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
@@ -492,7 +500,12 @@ struct DashboardView: View {
     private var byProjectCard: some View {
         let projects = Array(model.snapshot.claudeCode.byProject.prefix(8))
         return VStack(alignment: .leading, spacing: 10) {
-            Text("By project").font(.title3.bold())
+            HStack(spacing: 6) {
+                Text("By project").font(.title3.bold())
+                // Honest label: this table is NOT range-scoped (per-project
+                // per-day buckets aren't kept — costs need the model split).
+                Text("· all time").font(.caption).foregroundStyle(.secondary)
+            }
             HStack {
                 Text("Project").frame(maxWidth: .infinity, alignment: .leading)
                 Text("Sessions").frame(width: 70, alignment: .trailing)

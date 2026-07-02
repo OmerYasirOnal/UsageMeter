@@ -175,6 +175,42 @@ public enum DashboardMetrics {
         return Double(last - previous) / Double(previous)
     }
 
+    /// "By model" totals within a range, from the per-day buckets (sorted by
+    /// tokens desc, like the all-time list).
+    public static func modelUsage(
+        _ daily: [DayModelUsage], range: DashboardRange,
+        now: Date = Date(), calendar: Calendar = .current
+    ) -> [ModelUsage] {
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = calendar.timeZone
+        formatter.dateFormat = "yyyy-MM-dd"
+
+        var cutoff: Date?
+        if let dayCount = range.dayCount {
+            cutoff = calendar.date(byAdding: .day, value: -(dayCount - 1),
+                                   to: calendar.startOfDay(for: now))
+        }
+        var byFamily: [ModelFamily: (usage: TokenUsage, cost: Double?, anyCost: Bool)] = [:]
+        for bucket in daily {
+            if let cutoff {
+                guard let date = formatter.date(from: bucket.day), date >= cutoff else { continue }
+            }
+            var entry = byFamily[bucket.family] ?? (.zero, nil, false)
+            entry.usage += bucket.usage
+            if let c = bucket.estimatedCost {
+                entry.cost = (entry.cost ?? 0) + c
+                entry.anyCost = true
+            }
+            byFamily[bucket.family] = entry
+        }
+        return byFamily
+            .map { ModelUsage(family: $0.key, usage: $0.value.usage,
+                              estimatedCost: $0.value.anyCost ? $0.value.cost : nil) }
+            .sorted { $0.usage.totalTokens > $1.usage.totalTokens }
+    }
+
     public static func insights(_ points: [DailyPoint]) -> UsageInsights {
         let active = points.filter { $0.tokens > 0 }
         let totalTokens = points.reduce(0) { $0 + $1.tokens }

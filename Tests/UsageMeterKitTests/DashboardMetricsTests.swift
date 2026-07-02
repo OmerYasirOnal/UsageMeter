@@ -84,6 +84,36 @@ import Foundation
         #expect(DashboardMetrics.movingAverage([], window: 7, calendar: utcCalendar()).isEmpty)
     }
 
+    // MARK: - Per-day per-model (range-scoped "By model")
+
+    @Test func aggregatorEmitsDailyByModel() {
+        let calendar = utcCalendar()
+        let aggregator = DailyAggregator(
+            calculator: CostCalculator(pricing: Pricing.loadBundled()), calendar: calendar)
+        let t1 = TestTime.date("2026-06-29T10:00:00Z")
+        let t2 = TestTime.date("2026-06-30T10:00:00Z")
+        let records = [
+            UsageRecord(id: "a", model: "claude-opus-4-8", timestamp: t1,
+                        usage: TokenUsage(outputTokens: 100), projectID: "p"),
+            UsageRecord(id: "b", model: "claude-sonnet-5", timestamp: t2,
+                        usage: TokenUsage(outputTokens: 50), projectID: "p"),
+            UsageRecord(id: "c", model: "claude-opus-4-8", timestamp: t2,
+                        usage: TokenUsage(outputTokens: 25), projectID: "p"),
+        ]
+        let stats = aggregator.aggregate(records: records, now: t2)
+        let daily = stats.dailyByModel
+        #expect(daily.count == 3) // (29,opus) (30,sonnet) (30,opus)
+        let opus30 = daily.first { $0.day == "2026-06-30" && $0.family == .opus }
+        #expect(opus30?.usage.totalTokens == 25)
+        #expect(opus30?.estimatedCost != nil)
+        // Range filter+sum helper: only 06-30 within a 1-day range.
+        let ranged = DashboardMetrics.modelUsage(
+            daily, range: .days7, now: TestTime.date("2026-07-06T12:00:00Z"), calendar: calendar)
+        #expect(ranged.count == 2)                    // 06-29 opus dropped
+        #expect(ranged.first?.family == .sonnet)      // 50 > 25, sorted by tokens
+        #expect(ranged.first?.usage.totalTokens == 50)
+    }
+
     // MARK: - Week over week
 
     @Test func weekOverWeekComparesCompleteWindows() {
