@@ -9,6 +9,8 @@ final class LoginWebController: ObservableObject {
     fileprivate weak var webView: WKWebView?
     /// First page finished loading — used to hide the loading overlay.
     @Published var hasLoadedOnce = false
+    /// Curtain phase machine — fed by the Coordinator, rendered by the screen.
+    @Published var flow = LoginFlowModel()
     func reload() { webView?.reload() }
     func goToUsage() { webView?.load(URLRequest(url: AccountLoginView.usagePageURL)) }
 }
@@ -84,6 +86,9 @@ struct AccountLoginView: NSViewRepresentable {
         /// login" dead end).
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             MainActor.assumeIsolated { controller.hasLoadedOnce = true }
+            if webView === popupWebView, let title = webView.title, !title.isEmpty {
+                MainActor.assumeIsolated { popupWindow?.title = title }
+            }
             guard let url = webView.url, let host = url.host?.lowercased(),
                   host.contains("claude.ai") || host.contains("claude.com") else { return }
             // Only the main login WebView drives the usage hop — not the OAuth popup.
@@ -91,11 +96,14 @@ struct AccountLoginView: NSViewRepresentable {
             let path = url.path.lowercased()
             if path.contains("login") || path.contains("auth") || path.contains("oauth") || path.contains("magic") {
                 requestedUsage = false   // back in the login flow → re-arm
+                MainActor.assumeIsolated { controller.flow.backOnLoginPage() }
                 return
             }
+            // Logged in — drop the curtain BEFORE any usage content can render.
+            MainActor.assumeIsolated { controller.flow.loggedInPageFinished(now: Date()) }
             if path.contains("usage") { return } // already captured-from here
-            // Logged in and landed on an app page → jump to Usage exactly once so the
-            // usage request fires (works for email + Google; fixes the blank dead-end).
+            // Jump to Usage exactly once so the usage request fires (hidden behind
+            // the curtain; works for email + Google).
             if !requestedUsage {
                 requestedUsage = true
                 webView.load(URLRequest(url: AccountLoginView.usagePageURL))
@@ -226,20 +234,18 @@ struct AccountLoginScreen: View {
     @ObservedObject var auth: AccountAuth
     @StateObject private var controller = LoginWebController()
     @Environment(\.dismissWindow) private var dismissWindow
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var closeTask: Task<Void, Never>?
+    @State private var timeoutTask: Task<Void, Never>?
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Image(systemName: "person.crop.circle").foregroundStyle(Theme.accent)
                 Text("Sign in to claude.ai").font(.headline)
-                if auth.isAuthenticated {
-                    Label("Captured — closing…", systemImage: "checkmark.seal.fill")
-                        .foregroundStyle(Theme.ok).font(.callout)
-                }
                 Spacer()
-                Button { controller.goToUsage() } label: { Label("Usage Page", systemImage: "chart.bar") }
                 Button { controller.reload() } label: { Image(systemName: "arrow.clockwise") }
+                    .help("Reload")
                 Button("Done") { dismissWindow(id: AppWindowID.accountLogin) }
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.borderedProminent)
@@ -259,6 +265,26 @@ struct AccountLoginScreen: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(.background)
                 }
+                if showsCurtain {
+                    curtain
+                        .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 1.02)))
+                }
+            }
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: showsCurtain)
+
+            if case .fetchTimeout = controller.flow.phase {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.warning)
+                    Text("Couldn't fetch your usage yet.").font(.callout)
+                    Button("Retry") {
+                        controller.flow.retryRequested(now: Date())
+                        controller.goToUsage()
+                    }
+                    .buttonStyle(.borderedProminent).tint(Theme.accent)
+                    Spacer()
+                }
+                .padding(10)
+                .background(.quaternary.opacity(0.5))
             }
 
             Divider()
@@ -266,28 +292,70 @@ struct AccountLoginScreen: View {
                 Label("If \u{201C}Continue with Google\u{201D} errors, try \u{201C}Continue with email\u{201D}.",
                       systemImage: "lightbulb")
                     .font(.caption2).foregroundStyle(Theme.accent)
-                Text("UsageMeter never sees your password — only your claude.ai login session is stored locally, and Log out wipes it. It reads only your usage percentages and reset times — never conversation content. After signing in, the Usage page opens automatically and this window closes once your numbers are captured.")
+                Text("UsageMeter never sees your password — only your claude.ai login session is stored locally, and Log out wipes it. It reads only usage percentages and reset times, never conversation content. This window closes by itself once your numbers are captured.")
                     .font(.caption2).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(8)
         }
-        .frame(minWidth: 860, minHeight: 680)
+        .frame(minWidth: 560, minHeight: 640)
         .tint(Theme.accent)
         .managesActivationPolicy()
         .onChange(of: auth.lastCaptured) { _, captured in
-            // Close ONLY after a genuine usage capture (never while the user is still
-            // typing credentials — no usage response fires until logged in). 2.5s,
-            // cancellable so it can't close the wrong window or fire twice.
+            // React ONLY to a genuine usage capture (never while the user is still
+            // typing credentials — no usage response fires until logged in).
             guard captured != nil else { return }
-            closeTask?.cancel()
-            closeTask = Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 2_500_000_000)
-                guard !Task.isCancelled else { return }
-                dismissWindow(id: AppWindowID.accountLogin)
+            controller.flow.usageCaptured()
+        }
+        .onChange(of: controller.flow.phase) { _, phase in
+            timeoutTask?.cancel()
+            switch phase {
+            case .fetching(let since):
+                timeoutTask = Task { @MainActor in
+                    let deadline = since.addingTimeInterval(LoginFlowModel.fetchTimeout)
+                    try? await Task.sleep(nanoseconds: UInt64(max(0, deadline.timeIntervalSinceNow) * 1_000_000_000))
+                    guard !Task.isCancelled else { return }
+                    controller.flow.tick(now: Date())
+                }
+            case .captured:
+                closeTask?.cancel()
+                closeTask = Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 800_000_000)
+                    guard !Task.isCancelled else { return }
+                    dismissWindow(id: AppWindowID.accountLogin)
+                }
+            case .signingIn, .fetchTimeout:
+                break
             }
         }
-        .onDisappear { closeTask?.cancel() }
+        .onDisappear { closeTask?.cancel(); timeoutTask?.cancel() }
+    }
+
+    private var showsCurtain: Bool {
+        switch controller.flow.phase {
+        case .fetching, .captured: return true
+        case .signingIn, .fetchTimeout: return false
+        }
+    }
+
+    /// Native cover shown from "logged in" until the window closes — the
+    /// claude.ai usage page renders invisibly behind it.
+    private var curtain: some View {
+        VStack(spacing: 14) {
+            if case .captured = controller.flow.phase {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 44)).foregroundStyle(Theme.ok)
+                Text("You're all set").font(.title3.weight(.semibold))
+                Text("Usage captured — closing…").font(.callout).foregroundStyle(.secondary)
+            } else {
+                ProgressView().controlSize(.large)
+                Text("Signed in").font(.title3.weight(.semibold))
+                Text("Fetching your usage…").font(.callout).foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.background)
+        .accessibilityElement(children: .combine)
     }
 }
 #endif
