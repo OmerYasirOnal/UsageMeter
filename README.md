@@ -42,6 +42,12 @@ It tracks three independent things:
 grab `UsageMeter-macOS.zip`, unzip, and drag **UsageMeter.app** into your Applications folder.
 Look for the gauge icon in the menu bar.
 
+Or with **Homebrew**:
+
+```bash
+brew install --cask omeryasironal/tap/usagemeter
+```
+
 > The download is **signed with a Developer ID and notarized by Apple** (hardened
 > runtime, stapled ticket), so it opens with a normal double-click — no Gatekeeper
 > warning and no `xattr` workaround. An App Store release is also in the works.
