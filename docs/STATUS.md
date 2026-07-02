@@ -89,6 +89,15 @@ So we pivoted to local-only and **expired build 2** so it can't be submitted.
   needed; APPSTORE menu bar defaults to showing today's API value. Both build
   variants verified (`swift build` and `swift build -Xswiftc -DAPPSTORE`).
   Version/build numbers NOT bumped yet — do that when submitting 0.2.1.
+- **v0.2.2 released + Homebrew tap (2026-07-02)** — notarized GitHub release
+  `v0.2.2` (Kiln, curtain, forecasts, tabbed Settings, app-wide theme, update
+  check, quartile heatmap, Team Stage 0). New public repo
+  `OmerYasirOnal/homebrew-tap` → `brew install --cask omeryasironal/tap/usagemeter`
+  (update the cask's version+sha256 on each release). ⚠️ Repeated same-day
+  logouts: root-cause candidate = replay UA ≠ WebView UA (Cloudflare clearance
+  is UA-bound) → replay now sends the Safari UA; cookie write-back UNWIRED
+  (kit code+tests remain); os.Logger (subsystem com.omeryasir.usagemeter,
+  category account) records auth transitions for the next incident.
 - **Team snapshot Stage 0 (2026-07-02)** — branch `feat/team-snapshot`, spec
   `docs/superpowers/specs/2026-07-02-team-snapshot-design.md`: serverless
   team/admin first step. `TeamSummary` (`.umteam`, schemaVersion 1, stats-only —
