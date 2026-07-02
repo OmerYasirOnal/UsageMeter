@@ -17,6 +17,9 @@ struct AppSettings: Equatable {
     var showApiValue: Bool
     /// Notify at 50/75/90% and when on track to hit a limit before reset.
     var notificationsEnabled: Bool
+    /// Alert once per day when today's Claude Code "API value" crosses this
+    /// amount (USD). Works from local logs alone — no account needed. 0 = off.
+    var dailyBudgetUSD: Double
     /// Color-scheme override.
     var appearance: AppAppearance
     /// Show synthetic sample usage so the app can be previewed before there's any
@@ -28,13 +31,24 @@ struct AppSettings: Equatable {
         projectRootPaths: [],
         refreshIntervalMinutes: 1,
         launchAtLogin: false,
-        showCostInMenuBar: false,
+        showCostInMenuBar: defaultShowCostInMenuBar,
         showPercentInMenuBar: true,
         showApiValue: true,
         notificationsEnabled: true,
+        dailyBudgetUSD: 0,
         appearance: .system,
         showSampleData: false
     )
+
+    /// The App Store build has no account %, so the menu bar would show a bare
+    /// glyph by default; start with today's API value visible there instead.
+    private static var defaultShowCostInMenuBar: Bool {
+        #if APPSTORE
+        true
+        #else
+        false
+        #endif
+    }
 
     /// Minimum polite refresh interval (seconds) regardless of the chosen minutes.
     static let minimumIntervalSeconds: TimeInterval = 60
@@ -62,6 +76,7 @@ struct AppSettings: Equatable {
         static let showPercent = "settings.showPercentInMenuBar"
         static let showApiValue = "settings.showApiValue"
         static let notifications = "settings.notificationsEnabled"
+        static let dailyBudget = "settings.dailyBudgetUSD"
         static let appearance = "settings.appearance"
         static let showSampleData = DemoData.defaultsKey   // shared with the demo gate
     }
@@ -75,9 +90,11 @@ struct AppSettings: Equatable {
             settings.refreshIntervalMinutes = defaults.double(forKey: Keys.refreshMinutes)
         }
         settings.launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
-        settings.showCostInMenuBar = defaults.bool(forKey: Keys.showCost)
-        // Only override the default (true) when the user has explicitly set this —
-        // otherwise a missing key would read `false` and hide the % everyone had.
+        // Only override build-specific / true defaults when the user has explicitly
+        // set the key — otherwise a missing key would silently read `false`.
+        if defaults.object(forKey: Keys.showCost) != nil {
+            settings.showCostInMenuBar = defaults.bool(forKey: Keys.showCost)
+        }
         if defaults.object(forKey: Keys.showPercent) != nil {
             settings.showPercentInMenuBar = defaults.bool(forKey: Keys.showPercent)
         }
@@ -86,6 +103,9 @@ struct AppSettings: Equatable {
         }
         if defaults.object(forKey: Keys.notifications) != nil {
             settings.notificationsEnabled = defaults.bool(forKey: Keys.notifications)
+        }
+        if defaults.object(forKey: Keys.dailyBudget) != nil {
+            settings.dailyBudgetUSD = defaults.double(forKey: Keys.dailyBudget)
         }
         if let raw = defaults.string(forKey: Keys.appearance), let a = AppAppearance(rawValue: raw) {
             settings.appearance = a
@@ -102,6 +122,7 @@ struct AppSettings: Equatable {
         defaults.set(showPercentInMenuBar, forKey: Keys.showPercent)
         defaults.set(showApiValue, forKey: Keys.showApiValue)
         defaults.set(notificationsEnabled, forKey: Keys.notifications)
+        defaults.set(dailyBudgetUSD, forKey: Keys.dailyBudget)
         defaults.set(appearance.rawValue, forKey: Keys.appearance)
         defaults.set(showSampleData, forKey: Keys.showSampleData)
     }
