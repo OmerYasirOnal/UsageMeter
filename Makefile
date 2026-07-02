@@ -20,6 +20,12 @@ app:
 run:
 	./Scripts/make_app.sh --run
 
+# Build a Developer-ID-signed, notarized, stapled UsageMeter-macOS.zip for the
+# GitHub download (no Gatekeeper warning). Needs a "Developer ID Application"
+# cert in the keychain + notarytool credentials — see Scripts/make_app.sh.
+release-app:
+	./Scripts/make_app.sh --release
+
 # Generate the Xcode app target (for Mac App Store archiving). Needs XcodeGen
 # (brew install xcodegen). The SwiftPM build stays the source of truth for tests.
 xcodeproj:
