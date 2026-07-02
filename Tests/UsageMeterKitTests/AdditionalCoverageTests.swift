@@ -523,6 +523,29 @@ final class ScriptedAccountClient: AccountUsageClient, @unchecked Sendable {
         #expect(stats.total.outputTokens == 100)
     }
 
+    @Test func cacheLoadsLazilyOnFirstAccessNotInit() throws {
+        let storeDir = fm.temporaryDirectory.appendingPathComponent("um-lazy-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fm.removeItem(at: storeDir) }
+        let store = UsageStore(directory: storeDir)
+
+        // Seed cache A on disk, construct the source, then REPLACE with cache B
+        // before anything is accessed. A lazy loader sees B; an eager init
+        // would have latched A.
+        let record = UsageRecord(id: "lazy-1", model: "claude-opus-4-8",
+                                 timestamp: Date(timeIntervalSince1970: 1_800_000_000),
+                                 usage: TokenUsage(outputTokens: 1), projectID: "p")
+        store.save(CacheData(files: ["a": CachedFile(
+            stamp: FileStamp(modifiedAt: Date(timeIntervalSince1970: 1), size: 1),
+            projectID: "p", records: [])]))
+        let source = LocalClaudeCodeSource(store: store, pricing: .defaults)
+        store.save(CacheData(files: ["b": CachedFile(
+            stamp: FileStamp(modifiedAt: Date(timeIntervalSince1970: 2), size: 2),
+            projectID: "p", records: [record])]))
+
+        let stats = source.cachedStats(now: Date(timeIntervalSince1970: 1_800_000_100))
+        #expect(stats.recordCount == 1)   // saw cache B → load happened on access
+    }
+
     @Test func genuineRemovalStillDropsRecords() throws {
         // The wipe guard must not break normal removal semantics: when the scan
         // still sees the root but one file is gone, its records are dropped.

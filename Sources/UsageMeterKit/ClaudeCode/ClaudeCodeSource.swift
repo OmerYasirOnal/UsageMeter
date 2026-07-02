@@ -26,7 +26,19 @@ public final class LocalClaudeCodeSource: ClaudeCodeSource, @unchecked Sendable 
     private let scanner: ProjectScanner
     private let parser: JSONLParser
     private let aggregator: DailyAggregator
-    private var cache: CacheData
+
+    /// Loaded on FIRST ACCESS, not in `init`: `init` runs synchronously inside
+    /// `@MainActor AppModel.init` at launch, while every access happens inside
+    /// the `DataEngine` actor — so the (growing-with-history) JSON decode moves
+    /// off the main thread.
+    private var cacheStorage: CacheData?
+    private var cache: CacheData {
+        get {
+            if cacheStorage == nil { cacheStorage = store.load() }
+            return cacheStorage!
+        }
+        set { cacheStorage = newValue }
+    }
 
     public init(
         store: UsageStore = UsageStore(),
@@ -37,7 +49,6 @@ public final class LocalClaudeCodeSource: ClaudeCodeSource, @unchecked Sendable 
         self.scanner = ProjectScanner()
         self.parser = JSONLParser()
         self.aggregator = DailyAggregator(calculator: CostCalculator(pricing: pricing), calendar: calendar)
-        self.cache = store.load()
     }
 
     public var lastUpdated: Date? { cache.lastUpdated }
@@ -117,7 +128,7 @@ public final class LocalClaudeCodeSource: ClaudeCodeSource, @unchecked Sendable 
 
     public func reset() {
         store.clear()
-        cache = .empty
+        cacheStorage = .empty
     }
 
     private func aggregate(now: Date) -> ClaudeCodeStats {
