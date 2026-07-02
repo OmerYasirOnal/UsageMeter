@@ -89,6 +89,19 @@ So we pivoted to local-only and **expired build 2** so it can't be submitted.
   needed; APPSTORE menu bar defaults to showing today's API value. Both build
   variants verified (`swift build` and `swift build -Xswiftc -DAPPSTORE`).
   Version/build numbers NOT bumped yet — do that when submitting 0.2.1.
+- **Settings rebuild + app-wide appearance + chart analysis (2026-07-02)** —
+  branch `feat/settings-appearance`, spec
+  `docs/superpowers/specs/2026-07-02-settings-appearance-analysis-design.md`:
+  (1) theme override now applied as `NSApp.appearance` from AppModel (per-view
+  `preferredColorScheme` removed) — **fixes the popover-window appearance
+  quirk** at the root; window chrome/materials/menus all follow the setting;
+  (2) Settings rebuilt as a tabbed panel (General / Data / Notifications /
+  Account / About, width 560, version row in About; folders editor keeps its
+  commit-on-focus-loss lifecycle, plus commit-on-tab-leave); (3) charts:
+  hover tooltip on Usage History (nearest-day rule + material card),
+  "+34% vs previous 7 days" week-over-week insight card
+  (`DashboardMetrics.weekOverWeekChange`, complete-days windows, nil without a
+  baseline), GitHub-style month labels on the Activity heatmap. 171 tests.
 - **Forecast analytics + durable login (2026-07-02)** — branch
   `feat/forecast-analytics`, spec
   `docs/superpowers/specs/2026-07-02-forecast-analytics-design.md`: (1)

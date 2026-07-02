@@ -10,6 +10,7 @@ struct DashboardView: View {
     @State private var range: DashboardRange = .days30
     // Skip the fade-in for demo/screenshot rendering (ImageRenderer doesn't run .task).
     @State private var appeared = DemoData.isEnabled
+    @State private var hovered: DailyPoint?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var allPoints: [DailyPoint] {
@@ -57,7 +58,6 @@ struct DashboardView: View {
         }
         .frame(minWidth: 900, minHeight: 640)
         .tint(Theme.accent)
-        .preferredColorScheme(model.settings.appearance.colorScheme)
         .managesActivationPolicy()
         .task {
             // Reveal immediately with cached data — don't stay blank while a slow
@@ -228,6 +228,30 @@ struct DashboardView: View {
                         .lineStyle(StrokeStyle(lineWidth: 1.5))
                         .interpolationMethod(.monotone)
                     }
+                    if let hovered {
+                        RuleMark(x: .value("Day", hovered.date, unit: .day))
+                            .foregroundStyle(.secondary.opacity(0.35))
+                            .lineStyle(StrokeStyle(lineWidth: 1))
+                            .annotation(
+                                position: .top, spacing: 6,
+                                overflowResolution: .init(x: .fit(to: .chart), y: .disabled)
+                            ) {
+                                hoverTooltip(hovered)
+                            }
+                    }
+                }
+                .chartOverlay { proxy in
+                    GeometryReader { geo in
+                        Rectangle().fill(.clear).contentShape(Rectangle())
+                            .onContinuousHover { phase in
+                                switch phase {
+                                case .active(let location):
+                                    hovered = nearestPoint(points, at: location, proxy: proxy, geo: geo)
+                                case .ended:
+                                    hovered = nil
+                                }
+                            }
+                    }
                 }
                 .chartYAxis {
                     AxisMarks { value in
@@ -256,6 +280,30 @@ struct DashboardView: View {
         .card()
     }
 
+    /// Map a hover location to the day column under the pointer.
+    private func nearestPoint(_ points: [DailyPoint], at location: CGPoint,
+                              proxy: ChartProxy, geo: GeometryProxy) -> DailyPoint? {
+        let plotFrame = geo[proxy.plotFrame!]
+        guard plotFrame.contains(location),
+              let date: Date = proxy.value(atX: location.x - plotFrame.minX) else { return nil }
+        let day = Calendar.current.startOfDay(for: date)
+        return points.first { $0.date == day }
+    }
+
+    private func hoverTooltip(_ point: DailyPoint) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(point.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                .font(.caption2).foregroundStyle(.secondary)
+            Text(Formatting.tokens(point.tokens)).font(.callout.weight(.semibold)).monospacedDigit()
+            if model.settings.showApiValue, let cost = point.cost {
+                Text("≈ \(Formatting.cost(cost))").font(.caption2).foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 8).padding(.vertical, 6)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+        .overlay(RoundedRectangle(cornerRadius: 6).stroke(.separator, lineWidth: 0.5))
+    }
+
     private func xStrideCount(_ points: [DailyPoint]) -> Int {
         switch range {
         case .days7: return 1
@@ -279,6 +327,11 @@ struct DashboardView: View {
             if let forecast {
                 insightCard("gauge.with.needle", "~" + Formatting.tokens(forecast.projectedTokens),
                             forecastLabel(forecast), .secondary)
+            }
+            if let wow = DashboardMetrics.weekOverWeekChange(allPoints) {
+                insightCard(wow >= 0 ? "arrow.up.right" : "arrow.down.right",
+                            String(format: "%+.0f%%", wow * 100),
+                            "vs previous 7 days", .secondary)
             }
             insightCard("chart.bar.fill", Formatting.tokens(insights.averageDailyTokens), "Avg / active day", .secondary)
             insightCard("flame.fill", insights.peak.map { Formatting.tokens($0.tokens) } ?? "—", peakLabel(insights), .secondary)

@@ -111,6 +111,18 @@ enum AppAppearance: String, CaseIterable, Equatable {
         case .dark: return .dark
         }
     }
+
+    /// The app-wide override applied to `NSApp.appearance`. Applying it at the
+    /// application level (not per-view `preferredColorScheme`) is what makes
+    /// window chrome, the MenuBarExtra popover material, and menus follow the
+    /// setting too — the per-view approach left those on the system appearance.
+    var nsAppearance: NSAppearance? {
+        switch self {
+        case .system: return nil
+        case .light: return NSAppearance(named: .aqua)
+        case .dark: return NSAppearance(named: .darkAqua)
+        }
+    }
 }
 
 /// A capsule progress bar with an animated fill and 75/90% threshold ticks —

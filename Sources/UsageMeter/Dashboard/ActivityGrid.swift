@@ -17,11 +17,14 @@ struct ActivityGrid: View {
 
         VStack(alignment: .leading, spacing: 8) {
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: spacing) {
-                    ForEach(Array(columns.enumerated()), id: \.offset) { _, week in
-                        VStack(spacing: spacing) {
-                            ForEach(0..<7, id: \.self) { row in
-                                cell(week[row], maxTokens: maxTokens, lookup: lookup)
+                VStack(alignment: .leading, spacing: 4) {
+                    monthLabels(columns)
+                    HStack(alignment: .top, spacing: spacing) {
+                        ForEach(Array(columns.enumerated()), id: \.offset) { _, week in
+                            VStack(spacing: spacing) {
+                                ForEach(0..<7, id: \.self) { row in
+                                    cell(week[row], maxTokens: maxTokens, lookup: lookup)
+                                }
                             }
                         }
                     }
@@ -33,6 +36,35 @@ struct ActivityGrid: View {
                     RoundedRectangle(cornerRadius: 2).fill(color(for: level)).frame(width: 10, height: 10)
                 }
                 Text("More").font(.caption2).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// GitHub-style month row: a label over the column where each month starts.
+    private func monthLabels(_ columns: [[Date?]]) -> some View {
+        let pitch = cell + spacing
+        let starts: [(index: Int, label: String)] = {
+            var result: [(Int, String)] = []
+            var lastMonth = -1
+            for (index, week) in columns.enumerated() {
+                guard let first = week.compactMap({ $0 }).first else { continue }
+                let month = calendar.component(.month, from: first)
+                if month != lastMonth {
+                    result.append((index, first.formatted(.dateTime.month(.abbreviated))))
+                    lastMonth = month
+                }
+            }
+            // Drop the first label if a second follows within 2 columns (partial month sliver).
+            if result.count >= 2, result[1].0 - result[0].0 < 3 { result.removeFirst() }
+            return result
+        }()
+        return ZStack(alignment: .topLeading) {
+            Color.clear.frame(width: CGFloat(columns.count) * pitch - spacing, height: 12)
+            ForEach(starts, id: \.index) { start in
+                Text(start.label)
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize()
+                    .offset(x: CGFloat(start.index) * pitch)
             }
         }
     }

@@ -44,7 +44,6 @@ struct MenuBarContentView: View {
         .frame(width: 340)
         .fixedSize(horizontal: false, vertical: true)
         .tint(Theme.accent)
-        .preferredColorScheme(model.settings.appearance.colorScheme)
         // Esc closes the popover, like every native menu-bar window.
         .background(
             Button("") { dismiss() }
