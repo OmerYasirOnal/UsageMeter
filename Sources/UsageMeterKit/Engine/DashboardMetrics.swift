@@ -35,6 +35,32 @@ public struct UsageInsights: Sendable, Equatable {
     }
 }
 
+/// One point of a moving-average trend line.
+public struct MAPoint: Sendable, Equatable, Identifiable {
+    public let day: String
+    public let date: Date
+    public let value: Double
+    public var id: String { day }
+
+    public init(day: String, date: Date, value: Double) {
+        self.day = day
+        self.date = date
+        self.value = value
+    }
+}
+
+/// Average daily tokens for one `Calendar` weekday (1 = Sunday … 7 = Saturday).
+public struct WeekdayAverage: Sendable, Equatable, Identifiable {
+    public let weekday: Int
+    public let averageTokens: Int
+    public var id: Int { weekday }
+
+    public init(weekday: Int, averageTokens: Int) {
+        self.weekday = weekday
+        self.averageTokens = averageTokens
+    }
+}
+
 /// Time window for the dashboard charts.
 public enum DashboardRange: Sendable, Equatable, CaseIterable {
     case days7, days30, days90, all
@@ -86,6 +112,44 @@ public enum DashboardMetrics {
             return points
         }
         return points.filter { $0.date >= cutoff }
+    }
+
+    /// Trailing moving average over CALENDAR days (gaps count as zero), one
+    /// value per input point. Dividing by the window — not by "points seen" —
+    /// keeps sparse early history from reading as a plateau.
+    public static func movingAverage(
+        _ points: [DailyPoint], window: Int = 7, calendar: Calendar = .current
+    ) -> [MAPoint] {
+        guard !points.isEmpty, window > 0 else { return [] }
+        let tokensByDay = Dictionary(uniqueKeysWithValues: points.map { ($0.date, $0.tokens) })
+        return points.map { point in
+            var sum = 0
+            for offset in 0..<window {
+                if let day = calendar.date(byAdding: .day, value: -offset, to: point.date) {
+                    sum += tokensByDay[day] ?? 0
+                }
+            }
+            return MAPoint(day: point.day, date: point.date, value: Double(sum) / Double(window))
+        }
+    }
+
+    /// Average tokens per weekday over the last `weeks` calendar weeks, dividing
+    /// by the weekday's OCCURRENCES (missing days count as zero days). Returned
+    /// for all 7 `Calendar` weekdays (1 = Sunday … 7 = Saturday).
+    public static func weekdayAverages(
+        _ points: [DailyPoint], weeks: Int = 12, now: Date = Date(), calendar: Calendar = .current
+    ) -> [WeekdayAverage] {
+        let startOfToday = calendar.startOfDay(for: now)
+        guard weeks > 0,
+              let cutoff = calendar.date(byAdding: .day, value: -(weeks * 7 - 1), to: startOfToday)
+        else { return [] }
+        var totals = [Int: Int]()
+        for point in points where point.date >= cutoff && point.date <= startOfToday {
+            totals[calendar.component(.weekday, from: point.date), default: 0] += point.tokens
+        }
+        return (1...7).map { weekday in
+            WeekdayAverage(weekday: weekday, averageTokens: (totals[weekday] ?? 0) / weeks)
+        }
     }
 
     public static func insights(_ points: [DailyPoint]) -> UsageInsights {
