@@ -84,6 +84,27 @@ import Foundation
         #expect(DashboardMetrics.movingAverage([], window: 7, calendar: utcCalendar()).isEmpty)
     }
 
+    // MARK: - Week over week
+
+    @Test func weekOverWeekComparesCompleteWindows() {
+        // Previous 7 complete days (06-14…06-20): 700. Last 7 (06-21…06-27): 1400.
+        // Today (06-28) is excluded — it's incomplete.
+        var points = (14...20).map { point(String(format: "2026-06-%02d", $0), 100) }
+        points += (21...27).map { point(String(format: "2026-06-%02d", $0), 200) }
+        points.append(point("2026-06-28", 999_999)) // must be ignored
+        let now = TestTime.date("2026-06-28T12:00:00Z")
+        let change = DashboardMetrics.weekOverWeekChange(points, now: now, calendar: utcCalendar())
+        #expect(change != nil)
+        #expect(abs(change! - 1.0) < 0.0001) // +100%
+    }
+
+    @Test func weekOverWeekNilWithoutBaseline() {
+        // Nothing in the previous window → no meaningful ratio.
+        let points = (21...27).map { point(String(format: "2026-06-%02d", $0), 200) }
+        let now = TestTime.date("2026-06-28T12:00:00Z")
+        #expect(DashboardMetrics.weekOverWeekChange(points, now: now, calendar: utcCalendar()) == nil)
+    }
+
     // MARK: - Weekday averages
 
     @Test func weekdayAveragesDivideByCalendarOccurrences() {

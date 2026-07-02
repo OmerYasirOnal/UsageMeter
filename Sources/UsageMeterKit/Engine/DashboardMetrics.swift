@@ -152,6 +152,29 @@ public enum DashboardMetrics {
         }
     }
 
+    /// Fractional change of the last 7 COMPLETE days vs the 7 before them
+    /// (+1.0 = doubled, -0.5 = halved). Today is excluded — it's still being
+    /// written and would understate the current week every morning. Nil when
+    /// the baseline window has no usage (a ratio against zero means nothing).
+    public static func weekOverWeekChange(
+        _ points: [DailyPoint], now: Date = Date(), calendar: Calendar = .current
+    ) -> Double? {
+        let startOfToday = calendar.startOfDay(for: now)
+        guard let lastStart = calendar.date(byAdding: .day, value: -7, to: startOfToday),
+              let previousStart = calendar.date(byAdding: .day, value: -14, to: startOfToday)
+        else { return nil }
+        var last = 0, previous = 0
+        for point in points {
+            if point.date >= lastStart && point.date < startOfToday {
+                last += point.tokens
+            } else if point.date >= previousStart && point.date < lastStart {
+                previous += point.tokens
+            }
+        }
+        guard previous > 0 else { return nil }
+        return Double(last - previous) / Double(previous)
+    }
+
     public static func insights(_ points: [DailyPoint]) -> UsageInsights {
         let active = points.filter { $0.tokens > 0 }
         let totalTokens = points.reduce(0) { $0 + $1.tokens }
