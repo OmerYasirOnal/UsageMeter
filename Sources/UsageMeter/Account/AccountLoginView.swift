@@ -124,13 +124,22 @@ struct AccountLoginView: NSViewRepresentable {
             popup.uiDelegate = self
 
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 520, height: 660),
+                contentRect: NSRect(x: 0, y: 0, width: 480, height: 700),
                 styleMask: [.titled, .closable, .resizable],
                 backing: .buffered, defer: false)
             window.title = "Sign in"
             window.isReleasedWhenClosed = false
             window.contentView = popup
-            window.center()
+            // Center over the login window (not the screen) so the flow reads
+            // as one surface.
+            if let parent = webView.window {
+                let p = parent.frame
+                window.setFrameOrigin(NSPoint(
+                    x: p.midX - window.frame.width / 2,
+                    y: p.midY - window.frame.height / 2))
+            } else {
+                window.center()
+            }
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
 
@@ -153,7 +162,7 @@ struct AccountLoginView: NSViewRepresentable {
     static let messageName = "usageProbe"
     static let usagePageURL = URL(string: "https://claude.ai/settings/usage")!
     static let safariUserAgent =
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15"
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"
 
     /// Wraps `fetch`/`XHR`. Reports the URL for first-party API calls (discovery),
     /// but sends the response BODY only for usage-shaped URLs.
