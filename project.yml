@@ -42,8 +42,8 @@ targets:
       base:
         PRODUCT_NAME: UsageMeter
         PRODUCT_BUNDLE_IDENTIFIER: com.omeryasir.usagemeter
-        MARKETING_VERSION: "0.2.2"
-        CURRENT_PROJECT_VERSION: "5"
+        MARKETING_VERSION: "0.2.3"
+        CURRENT_PROJECT_VERSION: "6"
         SWIFT_VERSION: "6.0"
         CODE_SIGN_ENTITLEMENTS: UsageMeter.entitlements
         CODE_SIGN_STYLE: Automatic
