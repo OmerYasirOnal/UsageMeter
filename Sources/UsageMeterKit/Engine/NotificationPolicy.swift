@@ -4,6 +4,7 @@ import Foundation
 public enum UsageAlertKind: Equatable, Sendable {
     case threshold(Int)   // crossed 50 / 75 / 90 %
     case burnRate         // projected to hit the limit before reset
+    case budget           // today's local API value crossed the user's daily budget
 }
 
 /// A single alert the app should surface as a notification.
@@ -17,6 +18,7 @@ public struct UsageAlert: Equatable, Sendable, Identifiable {
         switch kind {
         case .threshold(let t): return "\(metric)-t\(t)"
         case .burnRate: return "\(metric)-burn"
+        case .budget: return "\(metric)-budget"
         }
     }
 }
@@ -108,5 +110,37 @@ public enum NotificationPolicy {
     public static func cycleKey(for resetsAt: Date?) -> String {
         guard let resetsAt else { return "none" }
         return String(Int(resetsAt.timeIntervalSince1970 / 3600))
+    }
+}
+
+/// Pure decision logic for the local (Source B) daily-budget alert. Needs no
+/// account, so notifications stay useful in the local-only App Store build and
+/// for logged-out users. Reuses `MetricAlertState` (cycleKey = local day key;
+/// `firedBurnRate` doubles as the "fired today" flag) so the notifier's
+/// persisted state format is unchanged.
+public enum DailyBudgetPolicy {
+    public static let metricName = "Daily budget"
+
+    public static func evaluate(
+        todayCost: Double?,
+        budgetUSD: Double?,
+        dayKey: String,
+        prior: MetricAlertState?
+    ) -> (alerts: [UsageAlert], state: MetricAlertState) {
+        var state = prior ?? MetricAlertState(cycleKey: dayKey)
+        if state.cycleKey != dayKey {
+            state = MetricAlertState(cycleKey: dayKey)   // new day → re-arm
+        }
+        guard let budgetUSD, budgetUSD > 0,
+              let todayCost, todayCost >= budgetUSD,
+              !state.firedBurnRate else {
+            return ([], state)
+        }
+        state.firedBurnRate = true
+        let alert = UsageAlert(
+            metric: metricName, kind: .budget,
+            title: "Daily budget reached",
+            body: String(format: "Today's Claude Code API value (≈ $%.2f) crossed your $%.2f daily budget.", todayCost, budgetUSD))
+        return ([alert], state)
     }
 }
