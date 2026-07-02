@@ -95,4 +95,52 @@ import Foundation
         #expect(records.first?.usage.cacheCreationTokens == 500)
         #expect(records.first?.usage.cacheCreation1hTokens == 0)
     }
+
+    // MARK: - Incremental (append-offset) parsing
+
+    private func line(_ id: Int) -> String {
+        #"{"type":"assistant","requestId":"inc-\#(id)","timestamp":"2026-07-01T10:00:0\#(id % 10).000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":1}}}"#
+    }
+
+    @Test func incrementalParseConsumesOnlyCompleteLines() throws {
+        let fm = FileManager.default
+        let url = fm.temporaryDirectory.appendingPathComponent("inc-\(UUID().uuidString).jsonl")
+        defer { try? fm.removeItem(at: url) }
+        let complete = line(1) + "\n" + line(2) + "\n"
+        let partial = #"{"type":"assistant","requestId":"inc-3","time"#   // torn mid-write
+        try Data((complete + partial).utf8).write(to: url)
+
+        let result = parser.parseIncremental(fileAt: url, projectID: "p")
+        #expect(result.records.count == 2)                        // partial line skipped
+        #expect(result.parsedBytes == Data(complete.utf8).count)  // …and NOT consumed
+        #expect(result.parsedLines == 2)
+    }
+
+    @Test func incrementalResumeMatchesOneShotParse() throws {
+        let fm = FileManager.default
+        let url = fm.temporaryDirectory.appendingPathComponent("inc-\(UUID().uuidString).jsonl")
+        defer { try? fm.removeItem(at: url) }
+        // Include a record WITHOUT requestId/uuid so synthetic-id continuity is exercised.
+        let noID = #"{"type":"assistant","timestamp":"2026-07-01T10:00:05.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":9}}}"#
+        try Data((line(1) + "\n" + line(2) + "\n").utf8).write(to: url)
+
+        let first = parser.parseIncremental(fileAt: url, projectID: "p")
+        try Data((line(1) + "\n" + line(2) + "\n" + noID + "\n" + line(4) + "\n").utf8).write(to: url)
+        let second = parser.parseIncremental(fileAt: url, projectID: "p",
+                                             fromByteOffset: first.parsedBytes,
+                                             lineIndexBase: first.parsedLines)
+
+        let oneShot = parser.parseIncremental(fileAt: url, projectID: "p")
+        #expect((first.records + second.records).map(\.id) == oneShot.records.map(\.id))
+        #expect(second.parsedBytes == oneShot.parsedBytes)
+        #expect(second.parsedLines == oneShot.parsedLines)
+    }
+
+    @Test func incrementalParseOfMissingFileIsEmptyAndKeepsOffsets() {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("gone-\(UUID().uuidString).jsonl")
+        let result = parser.parseIncremental(fileAt: url, projectID: "p", fromByteOffset: 42, lineIndexBase: 7)
+        #expect(result.records.isEmpty)
+        #expect(result.parsedBytes == 42)
+        #expect(result.parsedLines == 7)
+    }
 }
