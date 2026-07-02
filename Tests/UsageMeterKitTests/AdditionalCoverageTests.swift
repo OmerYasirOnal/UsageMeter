@@ -440,6 +440,48 @@ final class ScriptedAccountClient: AccountUsageClient, @unchecked Sendable {
         #expect(!reloaded.files.isEmpty)
     }
 
+    @Test func appendFastPathReadsOnlyTheTail() throws {
+        let (root, storeDir) = try makeRootAndStore()
+        defer { try? fm.removeItem(at: root); try? fm.removeItem(at: storeDir) }
+        let session = root.appendingPathComponent("projA/s1.jsonl")
+        let store = UsageStore(directory: storeDir)
+        let source = LocalClaudeCodeSource(store: store, pricing: .defaults)
+        _ = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_000))
+
+        // Grow the file: REWRITE the first line with a new id AND append one.
+        // The fast path must pick up only the appended tail — the prefix edit
+        // stays invisible (append-only trade-off, fixed by any shrink).
+        let rewritten = #"{"type":"assistant","requestId":"r1-EDITED","timestamp":"2026-06-30T10:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":100}}}"#
+        let appended = #"{"type":"assistant","requestId":"r-tail","timestamp":"2026-06-30T12:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":7}}}"#
+        try Data((rewritten + "\n" + appended + "\n").utf8).write(to: session)
+
+        let stats = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_060))
+        let cached = UsageStore(directory: storeDir).load().files.values.first
+        let ids = Set((cached?.records ?? []).map(\.id))
+        #expect(ids.contains("r1"))          // prefix NOT re-read
+        #expect(!ids.contains("r1-EDITED"))
+        #expect(ids.contains("r-tail"))      // tail parsed
+        #expect(stats.recordCount == 2)
+        #expect((cached?.parsedBytes ?? 0) > 0)
+    }
+
+    @Test func shrinkForcesFullReparse() throws {
+        let (root, storeDir) = try makeRootAndStore()
+        defer { try? fm.removeItem(at: root); try? fm.removeItem(at: storeDir) }
+        let session = root.appendingPathComponent("projA/s1.jsonl")
+        let source = LocalClaudeCodeSource(store: UsageStore(directory: storeDir), pricing: .defaults)
+        _ = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_000))
+
+        // Genuinely SMALLER than the original line (short id + 1-digit tokens),
+        // so the append fast path must not trigger.
+        let replacement = #"{"type":"assistant","requestId":"n","timestamp":"2026-06-30T13:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":5}}}"#
+        try Data((replacement + "\n").utf8).write(to: session)
+
+        let stats = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_060))
+        #expect(stats.recordCount == 1)
+        #expect(stats.total.outputTokens == 5)
+    }
+
     @Test func genuineRemovalStillDropsRecords() throws {
         // The wipe guard must not break normal removal semantics: when the scan
         // still sees the root but one file is gone, its records are dropped.

@@ -8,11 +8,19 @@ public struct CachedFile: Codable, Sendable, Equatable {
     public var stamp: FileStamp
     public var projectID: String
     public var records: [UsageRecord]
+    /// Byte offset of the first unparsed byte — the append-only fast path
+    /// resumes here instead of re-reading the whole (possibly 60 MB) file.
+    public var parsedBytes: Int
+    /// Complete lines consumed up to `parsedBytes` (keeps synthetic ids stable).
+    public var parsedLines: Int
 
-    public init(stamp: FileStamp, projectID: String, records: [UsageRecord]) {
+    public init(stamp: FileStamp, projectID: String, records: [UsageRecord],
+                parsedBytes: Int = 0, parsedLines: Int = 0) {
         self.stamp = stamp
         self.projectID = projectID
         self.records = records
+        self.parsedBytes = parsedBytes
+        self.parsedLines = parsedLines
     }
 }
 
@@ -22,9 +30,10 @@ public struct CachedFile: Codable, Sendable, Equatable {
 /// service status (Source C) has its own `StatusStore`, keeping the sources
 /// decoupled in persistence too.
 public struct CacheData: Codable, Sendable, Equatable {
-    /// v3: `TokenUsage` gained `cacheCreation1hTokens` (cache_creation TTL split);
-    /// bumping forces one full re-parse so existing records pick up 1h data.
-    public static let currentVersion = 3
+    /// v3: `TokenUsage` gained `cacheCreation1hTokens` (cache_creation TTL split).
+    /// v4: `CachedFile` gained `parsedBytes`/`parsedLines` (append-offset parsing)
+    /// and records are stored globally deduped; bumping forces one rebuild.
+    public static let currentVersion = 4
 
     public var version: Int
     /// path -> cached file.
