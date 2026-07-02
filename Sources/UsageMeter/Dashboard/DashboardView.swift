@@ -273,7 +273,9 @@ struct DashboardView: View {
     private func insightsRow(_ insights: UsageInsights) -> some View {
         // Icons stay neutral: the semantic color ramp is reserved for limit
         // proximity — a red flame on a neutral fact reads as a false alarm.
-        HStack(spacing: 14) {
+        // Adaptive grid: with the forecast card present this row holds 5 cards
+        // and must wrap rather than squeeze.
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 190), spacing: 14)], spacing: 14) {
             if let forecast {
                 insightCard("gauge.with.needle", "~" + Formatting.tokens(forecast.projectedTokens),
                             forecastLabel(forecast), .secondary)
