@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/icon.png" width="128" height="128" alt="UsageMeter app icon — a coral gauge">
+  <img src="docs/icon.png" width="128" height="128" alt="UsageMeter app icon — a terracotta gauge">
 </p>
 
 <h1 align="center">UsageMeter</h1>
@@ -53,15 +53,26 @@ Requires **macOS 15 (Sequoia) or later**. Prefer to build it yourself? See
 
 ## Features
 
-- 🎛 **Menu-bar popover** — live session / weekly / Opus % with progress bars, reset
-  countdowns, real spend, today's Claude Code tokens + API value, and a status dot.
-  Optionally shows the session % right in the menu bar.
-- 📊 **Dashboard** — usage-history chart (7D / 30D / 90D / All), Insights cards, a
-  12-month GitHub-style activity heatmap, by-model / by-project breakdowns, and a
-  Claude Code summary. Export to **CSV** or a shareable **PNG**.
-- 🔔 **Smart notifications** — at 50 % / 75 % / 90 %, plus a smoothed burn-rate alert
-  ("on track to hit your limit before it resets").
-- 🌗 **Appearance** — System / Light / Dark, plus launch-at-login.
+- 🎛 **Menu-bar popover** — a session hero with a big reset countdown, weekly / Opus %,
+  real spend, today's Claude Code tokens + API value, and a status dot. Optionally
+  shows the session % or today's API value right in the menu bar.
+- 📈 **Forecasts** — "at this pace you hit the limit in ~2h" burn projections, and a
+  day-end forecast learned from *your own* daily rhythm ("on pace for ~420M tokens /
+  ≈ $560 today").
+- 📊 **Dashboard** — usage-history chart with hover tooltips and a 7-day trend line
+  (7D / 30D / 90D / All), Insights cards incl. week-over-week change, a weekly-rhythm
+  chart, a 12-month GitHub-style activity heatmap with month labels, by-model /
+  by-project breakdowns. Export to **CSV** or a shareable **PNG**.
+- 👥 **Team snapshots (serverless)** — each member exports a **stats-only**
+  `.umteam` file; drop them on the dashboard's Team card to see the whole team
+  (tokens, API value, 7-day Δ). No server, no accounts — nothing is transmitted.
+- 🔔 **Smart notifications** — at 50 % / 75 % / 90 %, a smoothed burn-rate alert
+  ("on track to hit your limit before it resets"), and a daily API-value budget.
+- ✨ **Frictionless login** — sign in on claude.ai's real page; a native curtain
+  fetches your numbers and closes the window in under a second. The session
+  self-renews, so you stay logged in.
+- 🌗 **Appearance** — System / Light / Dark applied everywhere (popover included),
+  launch-at-login, tabbed Settings, and a built-in update check for this download.
 - 🔒 **Local-first & private** — three decoupled sources; the app stays fully useful
   even when you never log in (Claude Code + status still work).
 
@@ -75,7 +86,7 @@ No third-party dependencies.
 ## Build, run & install
 
 ```bash
-make test      # 144 headless tests — no network or real data needed
+make test      # 180+ headless tests — no network or real data needed
 make run       # build UsageMeter.app and launch it
 make app       # just build ./UsageMeter.app
 make install   # build and copy to /Applications
