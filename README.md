@@ -24,6 +24,18 @@ It tracks three independent things:
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" width="780" alt="UsageMeter dashboard — live session and weekly limits, usage-history chart, insights, and a 12-month activity heatmap">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/popover.png" width="340" alt="UsageMeter menu-bar popover — live session and weekly %, today's Claude Code tokens and API value, and the current 5-hour block">
+</p>
+
+---
+
 ## Download
 
 **[⬇️ Download the latest release](https://github.com/OmerYasirOnal/UsageMeter/releases/latest)** —
@@ -64,7 +76,7 @@ No third-party dependencies.
 ## Build, run & install
 
 ```bash
-make test      # 113 headless tests — no network or real data needed
+make test      # 136 headless tests — no network or real data needed
 make run       # build UsageMeter.app and launch it
 make app       # just build ./UsageMeter.app
 make install   # build and copy to /Applications

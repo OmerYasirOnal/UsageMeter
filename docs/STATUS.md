@@ -138,8 +138,12 @@ make xcodeproj  # generate the Xcode app target (needs XcodeGen)
 
 ## TODO (next session, roughly in order)
 
-1. **README screenshots** — Yasir captures demo (popover + dashboard); agent commits
-   to `docs/screenshots/` and embeds in README. _(blocked on capture)_
+1. ~~**README screenshots**~~ — ✅ **done 2026-07-02**: captured from the REAL app
+   with real data (per Yasir — no demo mode) via `screencapture -l <windowID>`
+   (window IDs from `CGWindowListCopyWindowInfo`; popover opened by AppleScript-
+   clicking the menu-bar item). `docs/screenshots/{dashboard,popover}.png`,
+   embedded in README. Note: shots show real project names — re-capture if that
+   ever becomes a concern.
 2. **Verify the Pages privacy URL is live.**
 3. ~~**App icon**~~ — ✅ **done** (code-generated `gaugefill`; `make icon`).
    Menu-bar glyph stays the SF Symbol gauge (Canvas can't render in a menu-bar label).
