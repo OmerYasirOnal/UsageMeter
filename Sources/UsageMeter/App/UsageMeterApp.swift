@@ -35,7 +35,7 @@ struct UsageMeterApp: App {
             AccountLoginScreen(auth: model.accountAuth)
                 .environmentObject(model)
         }
-        .defaultSize(width: 860, height: 680)
+        .defaultSize(width: 640, height: 760)
         #endif
     }
 }
