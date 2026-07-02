@@ -84,6 +84,10 @@ final class AppModel: ObservableObject {
 
         didFinishInit = true
 
+        // Applied once here (NSApp exists by @NSApplicationDelegateAdaptor time);
+        // subsequent changes flow through applySettings.
+        applyAppearance()
+
         if initial.notificationsEnabled {
             notifier.requestAuthorizationIfNeeded()
         }
@@ -261,6 +265,16 @@ final class AppModel: ObservableObject {
         if settings.notificationsEnabled && !previous.notificationsEnabled {
             notifier.requestAuthorizationIfNeeded()
         }
+        if settings.appearance != previous.appearance {
+            applyAppearance()
+        }
+    }
+
+    /// App-level appearance override — recolors EVERYTHING (window chrome, the
+    /// MenuBarExtra popover material, menus), which per-view
+    /// `preferredColorScheme` could not.
+    func applyAppearance() {
+        NSApp.appearance = settings.appearance.nsAppearance
     }
 
     // MARK: - Auto refresh (adaptive, polite)

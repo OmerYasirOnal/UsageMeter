@@ -57,7 +57,6 @@ struct DashboardView: View {
         }
         .frame(minWidth: 900, minHeight: 640)
         .tint(Theme.accent)
-        .preferredColorScheme(model.settings.appearance.colorScheme)
         .managesActivationPolicy()
         .task {
             // Reveal immediately with cached data — don't stay blank while a slow
