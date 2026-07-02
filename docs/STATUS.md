@@ -89,6 +89,17 @@ So we pivoted to local-only and **expired build 2** so it can't be submitted.
   needed; APPSTORE menu bar defaults to showing today's API value. Both build
   variants verified (`swift build` and `swift build -Xswiftc -DAPPSTORE`).
   Version/build numbers NOT bumped yet — do that when submitting 0.2.1.
+- **Login-flow curtain (2026-07-02)** — branch `feat/login-curtain`, spec
+  `docs/superpowers/specs/2026-07-02-login-flow-polish-design.md`: after sign-in
+  the claude.ai usage page is never shown — a native "Signed in ✓ / Fetching your
+  usage…" curtain covers the WebView while the hidden hop fires the capture, then
+  the window closes in 0.8 s (was a visible 2.5 s dwell on the usage page). New
+  `LoginFlowModel` phase reducer in Kit (10 tests; 154 total). 15 s timeout lifts
+  the curtain with a Retry banner. Google hardening: live WKWebView harness proved
+  the OAuth popup reaches Google's real sign-in page (no UA block at that stage);
+  UA bumped to Safari 26.0 for the credential step, popup centered over the login
+  window with live title, dev-era "Usage Page" toolbar button removed, window
+  slimmed to 640×760. Live credentialed login still to be user-verified.
 - **Kiln redesign + usability foundation (2026-07-02)** — branch `feat/kiln-design`,
   plan `docs/superpowers/plans/2026-07-02-kiln-design-foundation.md`, from the
   5-lens design review: duotone identity (teal chrome #0F766E/#2DD4BF +
