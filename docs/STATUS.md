@@ -89,6 +89,12 @@ So we pivoted to local-only and **expired build 2** so it can't be submitted.
   needed; APPSTORE menu bar defaults to showing today's API value. Both build
   variants verified (`swift build` and `swift build -Xswiftc -DAPPSTORE`).
   Version/build numbers NOT bumped yet — do that when submitting 0.2.1.
+- **App Store 0.2.2 prepped (2026-07-02)** — decision: keep 0.2.0 in review
+  (pulling it resets the queue + invites metadata mismatch); build 0.2.2 (5)
+  (`APPSTORE` local-only variant) archived headlessly (xcodebuild + ASC API
+  key) and UPLOADED to App Store Connect. Verdict-day checklist + What's-New
+  copy: `docs/appstore-0.2.2-submission.md`. MVP policy unchanged (local-only
+  store build; all new features are local so they ship in both variants).
 - **v0.2.2 released + Homebrew tap (2026-07-02)** — notarized GitHub release
   `v0.2.2` (Kiln, curtain, forecasts, tabbed Settings, app-wide theme, update
   check, quartile heatmap, Team Stage 0). New public repo
