@@ -13,7 +13,7 @@ struct ActivityGrid: View {
     var body: some View {
         let lookup = tokensByDay()                 // built once per render
         let columns = buildColumns()
-        let maxTokens = max(1, points.map(\.tokens).max() ?? 1)
+        let thresholds = quartileThresholds(lookup)
 
         VStack(alignment: .leading, spacing: 8) {
             ScrollView(.horizontal, showsIndicators: false) {
@@ -23,7 +23,7 @@ struct ActivityGrid: View {
                         ForEach(Array(columns.enumerated()), id: \.offset) { _, week in
                             VStack(spacing: spacing) {
                                 ForEach(0..<7, id: \.self) { row in
-                                    cell(week[row], maxTokens: maxTokens, lookup: lookup)
+                                    cell(week[row], thresholds: thresholds, lookup: lookup)
                                 }
                             }
                         }
@@ -70,11 +70,11 @@ struct ActivityGrid: View {
     }
 
     @ViewBuilder
-    private func cell(_ date: Date?, maxTokens: Int, lookup: [Date: Int]) -> some View {
+    private func cell(_ date: Date?, thresholds: [Int], lookup: [Date: Int]) -> some View {
         if let date {
             let tokens = lookup[calendar.startOfDay(for: date)] ?? 0
             RoundedRectangle(cornerRadius: 2.5)
-                .fill(color(for: level(tokens, max: maxTokens)))
+                .fill(color(for: level(tokens, thresholds: thresholds)))
                 .frame(width: cell, height: cell)
                 .help(tokens > 0
                       ? "\(Formatting.tokens(tokens)) on \(date.formatted(.dateTime.month(.abbreviated).day().year()))"
@@ -108,14 +108,24 @@ struct ActivityGrid: View {
         return stride(from: 0, to: slots.count, by: 7).map { Array(slots[$0..<$0 + 7]) }
     }
 
-    private func level(_ tokens: Int, max: Int) -> Int {
-        guard tokens > 0, max > 0 else { return 0 }
-        switch Double(tokens) / Double(max) {
-        case ..<0.25: return 1
-        case ..<0.5: return 2
-        case ..<0.75: return 3
-        default: return 4
+    /// Quartile boundaries of the ACTIVE days' totals. Linear fractions of the
+    /// max washed out (one huge day pushed every normal day to the palest step);
+    /// quartiles show the actual distribution of working days.
+    private func quartileThresholds(_ lookup: [Date: Int]) -> [Int] {
+        let active = lookup.values.filter { $0 > 0 }.sorted()
+        guard !active.isEmpty else { return [] }
+        func q(_ fraction: Double) -> Int {
+            active[min(active.count - 1, Int(Double(active.count) * fraction))]
         }
+        return [q(0.25), q(0.5), q(0.75)]
+    }
+
+    private func level(_ tokens: Int, thresholds: [Int]) -> Int {
+        guard tokens > 0, thresholds.count == 3 else { return tokens > 0 ? 4 : 0 }
+        if tokens <= thresholds[0] { return 1 }
+        if tokens <= thresholds[1] { return 2 }
+        if tokens <= thresholds[2] { return 3 }
+        return 4
     }
 
     private func color(for level: Int) -> Color {
