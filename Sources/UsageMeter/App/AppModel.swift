@@ -145,7 +145,10 @@ final class AppModel: ObservableObject {
             snapshot = await engine.refreshAll()
             hasLoadedOnce = true
             updateCycleObservations(snapshot.account)
-            notifier.evaluate(snapshot.account, enabled: settings.notificationsEnabled)
+            notifier.evaluate(snapshot.account,
+                              todayCost: snapshot.claudeCode.todayEstimatedCost,
+                              dailyBudgetUSD: settings.dailyBudgetUSD,
+                              enabled: settings.notificationsEnabled)
         } while pendingRefresh
         isRefreshing = false
     }

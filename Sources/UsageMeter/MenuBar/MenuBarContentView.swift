@@ -6,6 +6,7 @@ import UsageMeterKit
 struct MenuBarContentView: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.openWindow) private var openWindow
+    @State private var folderGranted = ClaudeFolderAccess.isGranted
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -42,6 +43,7 @@ struct MenuBarContentView: View {
                 try? await Task.sleep(for: .seconds(AppSettings.minimumIntervalSeconds))
             }
         }
+        .onAppear { folderGranted = ClaudeFolderAccess.isGranted }
     }
 
     // MARK: - Header
@@ -212,9 +214,7 @@ struct MenuBarContentView: View {
                 }
             }
             if cc.recordCount == 0 {
-                Text("No Claude Code usage yet. Run Claude Code, then refresh.")
-                    .font(.caption2).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                emptyState
             } else if model.settings.showApiValue {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(cc.sessionCount) sessions · all-time ≈ \(Formatting.cost(cc.totalEstimatedCost))")
@@ -227,6 +227,45 @@ struct MenuBarContentView: View {
                     .font(.caption2).foregroundStyle(.secondary)
             }
         }
+    }
+
+    /// First-run guidance. Ordered: still scanning → (App Store) missing sandbox
+    /// grant → genuinely no usage. The grant CTA is the fix for the "empty app
+    /// with no path forward" dead end in the sandboxed build.
+    @ViewBuilder
+    private var emptyState: some View {
+        if !model.hasLoadedOnce {
+            Text("Scanning session logs…")
+                .font(.caption2).foregroundStyle(.secondary)
+        } else {
+            #if APPSTORE
+            if !folderGranted {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("UsageMeter needs permission to read your Claude Code session logs (token counts only — never messages).")
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button {
+                        Task {
+                            await model.grantClaudeFolderAccess()
+                            folderGranted = ClaudeFolderAccess.isGranted
+                        }
+                    } label: {
+                        Label("Grant access to ~/.claude…", systemImage: "folder.badge.plus")
+                    }
+                }
+            } else {
+                noUsageYet
+            }
+            #else
+            noUsageYet
+            #endif
+        }
+    }
+
+    private var noUsageYet: some View {
+        Text("No Claude Code usage yet. Run Claude Code, then refresh.")
+            .font(.caption2).foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func blockSection(_ block: UsageBlock) -> some View {

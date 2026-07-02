@@ -78,6 +78,17 @@ So we pivoted to local-only and **expired build 2** so it can't be submitted.
   failures serve the last good value for ≤30 min; auto-refresh survives the
   sample-data toggle. Remaining review findings (UX/perf/distribution) are in the
   review report, unfixed.
+- **App Store 0.2.1 UX package (2026-07-02, ready to ship after Apple's 0.2.0
+  verdict)** — fixes the review's three APPSTORE-build UX gaps (branch
+  `feat/appstore-021-ux`, plan `docs/superpowers/plans/2026-07-02-appstore-021-ux-package.md`):
+  popover empty state now offers the sandbox "Grant access to ~/.claude…" CTA
+  (plus a "Scanning…" first-load state); account-dependent Settings/privacy copy
+  is compiled out of the APPSTORE build; **notifications work locally** — new
+  `DailyBudgetPolicy` (Kit, tested) alerts once/day when today's API value
+  crosses a user-set budget (Settings ▸ Notifications, $0 = off), no account
+  needed; APPSTORE menu bar defaults to showing today's API value. Both build
+  variants verified (`swift build` and `swift build -Xswiftc -DAPPSTORE`).
+  Version/build numbers NOT bumped yet — do that when submitting 0.2.1.
 - **Sandbox-ready** — `ClaudeFolderAccess` (security-scoped bookmark for `~/.claude`),
   additive (non-sandbox build unaffected); `UsageMeter.entitlements` provided.
 - **Xcode target** — `project.yml` (XcodeGen) → `make xcodeproj`; `xcodebuild`

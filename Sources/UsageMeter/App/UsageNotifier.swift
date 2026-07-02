@@ -23,27 +23,43 @@ final class UsageNotifier {
         }
     }
 
-    /// Evaluate the latest account usage and fire any due notifications.
+    /// Evaluate the latest snapshot data and fire any due notifications.
+    /// Account metrics need Source A; the daily-budget alert works from local
+    /// Source-B data alone (incl. the local-only App Store build).
     /// Only advances de-dup state when delivery is actually possible (bundled +
     /// authorized), so thresholds aren't silently "used up" before we can notify.
-    func evaluate(_ account: AccountUsage?, enabled: Bool, now: Date = Date()) {
-        guard enabled, isAvailable, authorized, let account else { return }
-        let metrics: [(String, UsageMetric?)] = [
-            ("Session", account.session),
-            ("Weekly", account.weekly),
-            ("Weekly Opus", account.weeklyOpus)
-        ]
+    func evaluate(_ account: AccountUsage?, todayCost: Double?, dailyBudgetUSD: Double,
+                  enabled: Bool, now: Date = Date()) {
+        guard enabled, isAvailable, authorized else { return }
         var toFire: [UsageAlert] = []
-        for (name, metric) in metrics {
-            guard let metric else { continue }
-            let result = NotificationPolicy.evaluate(
-                metricName: name, percent: metric.percent, resetsAt: metric.resetsAt,
-                now: now, prior: states[name])
-            states[name] = result.state
-            toFire.append(contentsOf: result.alerts)
+        if let account {
+            let metrics: [(String, UsageMetric?)] = [
+                ("Session", account.session),
+                ("Weekly", account.weekly),
+                ("Weekly Opus", account.weeklyOpus)
+            ]
+            for (name, metric) in metrics {
+                guard let metric else { continue }
+                let result = NotificationPolicy.evaluate(
+                    metricName: name, percent: metric.percent, resetsAt: metric.resetsAt,
+                    now: now, prior: states[name])
+                states[name] = result.state
+                toFire.append(contentsOf: result.alerts)
+            }
         }
+        let budgetResult = DailyBudgetPolicy.evaluate(
+            todayCost: todayCost, budgetUSD: dailyBudgetUSD,
+            dayKey: Self.dayKey(for: now), prior: states[DailyBudgetPolicy.metricName])
+        states[DailyBudgetPolicy.metricName] = budgetResult.state
+        toFire.append(contentsOf: budgetResult.alerts)
         save()
         toFire.forEach(post)
+    }
+
+    /// Local-calendar day key (what a user means by "today").
+    private static func dayKey(for date: Date) -> String {
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return "\(c.year ?? 0)-\(c.month ?? 0)-\(c.day ?? 0)"
     }
 
     /// Clear remembered state (e.g. on logout) so a fresh login re-alerts cleanly.

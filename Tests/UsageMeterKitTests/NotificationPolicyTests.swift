@@ -80,3 +80,33 @@ import Foundation
         #expect(second.alerts.contains { $0.kind == .burnRate } == false)
     }
 }
+
+@Suite struct DailyBudgetPolicyTests {
+    @Test func firesOncePerDayWhenBudgetCrossed() {
+        let first = DailyBudgetPolicy.evaluate(todayCost: 12.5, budgetUSD: 10, dayKey: "2026-7-2", prior: nil)
+        #expect(first.alerts.count == 1)
+        #expect(first.alerts.first?.kind == .budget)
+
+        // Same day, still over budget → no repeat.
+        let second = DailyBudgetPolicy.evaluate(todayCost: 15.0, budgetUSD: 10, dayKey: "2026-7-2", prior: first.state)
+        #expect(second.alerts.isEmpty)
+    }
+
+    @Test func reArmsOnANewDay() {
+        let fired = DailyBudgetPolicy.evaluate(todayCost: 12.5, budgetUSD: 10, dayKey: "2026-7-2", prior: nil)
+        let nextDay = DailyBudgetPolicy.evaluate(todayCost: 11.0, budgetUSD: 10, dayKey: "2026-7-3", prior: fired.state)
+        #expect(nextDay.alerts.count == 1)
+    }
+
+    @Test func silentWhenOffBelowOrUnknown() {
+        #expect(DailyBudgetPolicy.evaluate(todayCost: 99, budgetUSD: 0, dayKey: "d", prior: nil).alerts.isEmpty)   // off
+        #expect(DailyBudgetPolicy.evaluate(todayCost: 99, budgetUSD: nil, dayKey: "d", prior: nil).alerts.isEmpty) // off
+        #expect(DailyBudgetPolicy.evaluate(todayCost: 5, budgetUSD: 10, dayKey: "d", prior: nil).alerts.isEmpty)   // below
+        #expect(DailyBudgetPolicy.evaluate(todayCost: nil, budgetUSD: 10, dayKey: "d", prior: nil).alerts.isEmpty) // unknown cost
+    }
+
+    @Test func exactBudgetCountsAsCrossed() {
+        let r = DailyBudgetPolicy.evaluate(todayCost: 10, budgetUSD: 10, dayKey: "d", prior: nil)
+        #expect(r.alerts.count == 1)
+    }
+}
