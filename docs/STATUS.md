@@ -89,6 +89,18 @@ So we pivoted to local-only and **expired build 2** so it can't be submitted.
   needed; APPSTORE menu bar defaults to showing today's API value. Both build
   variants verified (`swift build` and `swift build -Xswiftc -DAPPSTORE`).
   Version/build numbers NOT bumped yet — do that when submitting 0.2.1.
+- **Kiln redesign + usability foundation (2026-07-02)** — branch `feat/kiln-design`,
+  plan `docs/superpowers/plans/2026-07-02-kiln-design-foundation.md`, from the
+  5-lens design review: duotone identity (teal chrome #0F766E/#2DD4BF +
+  terracotta data ink #C2410C/#FB923C) replacing the borrowed Claude coral;
+  adaptive light/dark tokens via `Color(light:dark:)` (old values failed WCAG
+  contrast); color-as-state (numerals/menu-bar neutral until ≥75%); popover
+  re-hierarchy (single session hero + big reset countdown, compact weekly rows,
+  de-duped block/status/copy); keyboard shortcuts (⌘R/⌘,/⌘D/⌘Q/Esc); native
+  card fills + heatmap opaque ramp; Reduce Motion + VoiceOver labels; en_US USD
+  estimates; icon regenerated in fired terracotta. Known minor: the appearance
+  override doesn't recolor the popover WINDOW (follows system; pre-existing).
+  ⚠️ Bundle-ID unification (0.2.1) reset local settings + claude.ai login once.
 - **Source-B performance trio (2026-07-02)** — branch `perf/source-b-trio`, plan
   `docs/superpowers/plans/2026-07-02-source-b-performance-trio.md`: (1)
   **append-offset parsing** — `CachedFile` carries `parsedBytes`/`parsedLines`;
