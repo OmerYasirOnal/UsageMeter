@@ -114,6 +114,38 @@ import Foundation
         #expect(ranged.first?.usage.totalTokens == 50)
     }
 
+    // MARK: - Anomaly detection
+
+    @Test func flagsDaysAboveMeanPlusTwoSigma() {
+        // 9 quiet days at 100 + 1 spike at 1000. Active mean/σ make the spike
+        // an outlier; the quiet days are not.
+        var points = (1...9).map { point(String(format: "2026-06-%02d", $0), 100) }
+        points.append(point("2026-06-10", 1000))
+        let spikes = DashboardMetrics.anomalousDays(points)
+        #expect(spikes.count == 1)
+        #expect(spikes.first?.day == "2026-06-10")
+    }
+
+    @Test func noAnomaliesWhenUsageIsEven() {
+        let points = (1...10).map { point(String(format: "2026-06-%02d", $0), 100) }
+        #expect(DashboardMetrics.anomalousDays(points).isEmpty)
+    }
+
+    @Test func anomalyNeedsEnoughActiveDays() {
+        // Too few active days → no statistics, no false spikes.
+        let points = [point("2026-06-01", 100), point("2026-06-02", 5000)]
+        #expect(DashboardMetrics.anomalousDays(points).isEmpty)
+    }
+
+    @Test func anomalyIgnoresZeroDays() {
+        // Zero days must not drag the mean down and manufacture outliers.
+        var points = (1...8).map { point(String(format: "2026-06-%02d", $0), 100) }
+        points += [point("2026-06-09", 0), point("2026-06-10", 0)]
+        points.append(point("2026-06-11", 260)) // 100 mean, small σ → 260 is >2σ
+        let spikes = DashboardMetrics.anomalousDays(points)
+        #expect(spikes.map(\.day) == ["2026-06-11"])
+    }
+
     // MARK: - Week over week
 
     @Test func weekOverWeekComparesCompleteWindows() {

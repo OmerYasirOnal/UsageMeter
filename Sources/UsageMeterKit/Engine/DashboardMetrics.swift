@@ -211,6 +211,26 @@ public enum DashboardMetrics {
             .sorted { $0.usage.totalTokens > $1.usage.totalTokens }
     }
 
+    /// Statistically unusual (heavy) days: active days whose tokens exceed
+    /// mean + 2σ of the active-day distribution. Needs ≥5 active days to have a
+    /// meaningful spread; returns [] otherwise (no false alarms on thin data).
+    /// Zero days are excluded so idle stretches don't manufacture outliers.
+    public static func anomalousDays(_ points: [DailyPoint]) -> [DailyPoint] {
+        let active = points.filter { $0.tokens > 0 }
+        guard active.count >= 5 else { return [] }
+        let n = Double(active.count)
+        let mean = Double(active.reduce(0) { $0 + $1.tokens }) / n
+        let variance = active.reduce(0.0) { acc, p in
+            let d = Double(p.tokens) - mean
+            return acc + d * d
+        } / n
+        let sigma = variance.squareRoot()
+        guard sigma > 0 else { return [] }
+        let threshold = mean + 2 * sigma
+        return active.filter { Double($0.tokens) > threshold }
+            .sorted { $0.tokens > $1.tokens }
+    }
+
     public static func insights(_ points: [DailyPoint]) -> UsageInsights {
         let active = points.filter { $0.tokens > 0 }
         let totalTokens = points.reduce(0) { $0 + $1.tokens }

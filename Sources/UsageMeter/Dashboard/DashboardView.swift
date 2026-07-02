@@ -426,12 +426,24 @@ struct DashboardView: View {
     // MARK: - Activity grid
 
     private func activityCard(_ allPoints: [DailyPoint]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let spikes = DashboardMetrics.anomalousDays(allPoints)
+        return VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 1) {
                 Text("Activity").font(.title3.bold())
                 Text("Daily usage over the last 12 months").font(.caption).foregroundStyle(.secondary)
             }
             ActivityGrid(points: allPoints)
+            if let top = spikes.first {
+                Label {
+                    Text("\(spikes.count) unusually heavy \(spikes.count == 1 ? "day" : "days") — peak "
+                         + "\(Formatting.tokens(top.tokens)) on "
+                         + top.date.formatted(.dateTime.month(.abbreviated).day()))
+                } icon: {
+                    Image(systemName: "sparkle.magnifyingglass").foregroundStyle(Theme.data)
+                }
+                .font(.caption).foregroundStyle(.secondary)
+                .help("Days above your average + 2σ — statistical outliers in your usage.")
+            }
         }
         .card()
     }
