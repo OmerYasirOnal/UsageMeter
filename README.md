@@ -42,10 +42,9 @@ It tracks three independent things:
 grab `UsageMeter-macOS.zip`, unzip, and drag **UsageMeter.app** into your Applications folder.
 Look for the gauge icon in the menu bar.
 
-> **First launch:** the app is signed ad-hoc (not yet notarized), so macOS Gatekeeper
-> will warn on the first open. **Right-click the app → Open** once, or run
-> `xattr -dr com.apple.quarantine /Applications/UsageMeter.app`. A notarized build and
-> an App Store release are planned.
+> The download is **signed with a Developer ID and notarized by Apple** (hardened
+> runtime, stapled ticket), so it opens with a normal double-click — no Gatekeeper
+> warning and no `xattr` workaround. An App Store release is also in the works.
 
 Requires **macOS 15 (Sequoia) or later**. Prefer to build it yourself? See
 [Build, run & install](#build-run--install).
