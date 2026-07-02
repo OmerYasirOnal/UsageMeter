@@ -76,7 +76,7 @@ No third-party dependencies.
 ## Build, run & install
 
 ```bash
-make test      # 136 headless tests — no network or real data needed
+make test      # 144 headless tests — no network or real data needed
 make run       # build UsageMeter.app and launch it
 make app       # just build ./UsageMeter.app
 make install   # build and copy to /Applications

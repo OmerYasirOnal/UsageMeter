@@ -89,6 +89,16 @@ So we pivoted to local-only and **expired build 2** so it can't be submitted.
   needed; APPSTORE menu bar defaults to showing today's API value. Both build
   variants verified (`swift build` and `swift build -Xswiftc -DAPPSTORE`).
   Version/build numbers NOT bumped yet — do that when submitting 0.2.1.
+- **Source-B performance trio (2026-07-02)** — branch `perf/source-b-trio`, plan
+  `docs/superpowers/plans/2026-07-02-source-b-performance-trio.md`: (1)
+  **append-offset parsing** — `CachedFile` carries `parsedBytes`/`parsedLines`;
+  the active session file (60 MB ≈ 0.62 s/tick before) now parses only the
+  appended tail; (2) **store-time dedup** — records stored once globally with
+  deterministic sorted-path ownership (was 51,819 stored vs 21,591 unique ⇒
+  ~2.4× smaller cache.json/memory/encode); file removals trigger a full rebuild
+  so suppressed duplicates are recovered; (3) **lazy cache load** — the JSON
+  decode moved out of `AppModel.init` (main thread) into first access inside the
+  `DataEngine` actor. Cache v3→v4 (one-time rebuild).
 - **Sandbox-ready** — `ClaudeFolderAccess` (security-scoped bookmark for `~/.claude`),
   additive (non-sandbox build unaffected); `UsageMeter.entitlements` provided.
 - **Xcode target** — `project.yml` (XcodeGen) → `make xcodeproj`; `xcodebuild`
@@ -103,12 +113,12 @@ So we pivoted to local-only and **expired build 2** so it can't be submitted.
   `ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon`). Both build paths verified to embed
   the icon (`make app` → `CFBundleIconFile`; `xcodebuild` → `Assets.car` +
   `CFBundleIconName`).
-- **132 tests pass** (`make test`). App installed at `/Applications/UsageMeter.app`.
+- **144 tests pass** (`make test`). App installed at `/Applications/UsageMeter.app`.
 
 ## Build / run cheatsheet
 
 ```bash
-make test       # 132 headless tests
+make test       # 144 headless tests
 make run        # build + launch UsageMeter.app
 make install    # build + copy to /Applications
 make demo       # launch with synthetic data (for screenshots)
