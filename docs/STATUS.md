@@ -89,6 +89,22 @@ So we pivoted to local-only and **expired build 2** so it can't be submitted.
   needed; APPSTORE menu bar defaults to showing today's API value. Both build
   variants verified (`swift build` and `swift build -Xswiftc -DAPPSTORE`).
   Version/build numbers NOT bumped yet — do that when submitting 0.2.1.
+- **Forecast analytics + durable login (2026-07-02)** — branch
+  `feat/forecast-analytics`, spec
+  `docs/superpowers/specs/2026-07-02-forecast-analytics-design.md`: (1)
+  `IntradayProfile` + `DayEndForecast` in Kit — day-end projection from the
+  user's own 14-day intraday rhythm (honesty gates: ≥3 qualifying days,
+  fraction floor 0.05, early-morning silence) surfaced as an "On pace today"
+  insight card and a translucent projected-remainder segment + dashed rule on
+  today's history bar (7D/30D); (2) 7-day trailing moving-average line
+  (calendar-window, gaps count as zero; `Theme.dataMuted`) on 30D/90D/All;
+  (3) "Weekly rhythm" card — average tokens by weekday over 12 weeks, today's
+  weekday emphasized; (4) **durable login** — `LiveAccountUsageClient` hands
+  Set-Cookie headers back (`onSetCookies`) and `AccountAuth.storeCookies`
+  persists rotated/extended claude.ai session cookies into the WebKit store,
+  so the login self-renews with every refresh instead of dying at the original
+  cookie expiry. 169 tests. Visual pass on the new dashboard cards still owed
+  (user was active; no synthetic screenshots taken).
 - **Login-flow curtain (2026-07-02)** — branch `feat/login-curtain`, spec
   `docs/superpowers/specs/2026-07-02-login-flow-polish-design.md`: after sign-in
   the claude.ai usage page is never shown — a native "Signed in ✓ / Fetching your
