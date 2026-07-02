@@ -27,11 +27,11 @@ It tracks three independent things:
 ## Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/dashboard.png" width="780" alt="UsageMeter dashboard — live session and weekly limits, usage-history chart, insights, and a 12-month activity heatmap">
+  <img src="docs/screenshots/dashboard.png" width="780" alt="UsageMeter dashboard — live session and weekly limits, usage-history chart with a day-end projection and 7-day trend line, forecast and insight cards, and a weekly-rhythm chart">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/popover.png" width="340" alt="UsageMeter menu-bar popover — live session and weekly %, today's Claude Code tokens and API value, and the current 5-hour block">
+  <img src="docs/screenshots/popover.png" width="340" alt="UsageMeter menu-bar popover in the Kiln design — session hero with a reset countdown, weekly limit, and today's Claude Code tokens and API value">
 </p>
 
 ---
