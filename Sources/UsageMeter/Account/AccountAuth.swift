@@ -26,6 +26,13 @@ final class AccountAuth: ObservableObject, AccountSessionProviding, AccountEndpo
     /// separate from any other WebKit usage, and lets logout wipe only this store.
     let dataStore: WKWebsiteDataStore
 
+    /// Invisible zero-frame WebView created at init: WITHOUT a live WebView the
+    /// network process for an identifier-based store never spins up, so
+    /// `getAllCookies` keeps returning [] after a relaunch even though the
+    /// cookies sit on disk — every headless replay then looks logged out. This
+    /// was the "app logs me out on every relaunch" incident (2026-07-02).
+    private var cookieWarmup: WKWebView?
+
     private let endpointStore: AccountEndpointStore
     private let captureFileURL: URL
     private let discoveryFileURL: URL
@@ -52,6 +59,16 @@ final class AccountAuth: ObservableObject, AccountSessionProviding, AccountEndpo
         let info = endpointStore.load()
         self.endpointInfo = info
         self.isAuthenticated = info != nil // optimistic; first fetch (401) corrects it
+
+        // Wake the persisted cookie store (see `cookieWarmup`). Loading an empty
+        // string touches no network; it only spins up WebKit's processes so the
+        // on-disk cookies become readable.
+        let warmupConfig = WKWebViewConfiguration()
+        warmupConfig.websiteDataStore = dataStore
+        let warmup = WKWebView(frame: .zero, configuration: warmupConfig)
+        warmup.loadHTMLString("", baseURL: nil)
+        self.cookieWarmup = warmup
+
         Task { await reconcileLoginState() }
     }
 
@@ -98,11 +115,19 @@ final class AccountAuth: ObservableObject, AccountSessionProviding, AccountEndpo
     }
 
     private func reconcileLoginState() async {
-        // No claude cookies at all → definitely logged out.
-        if await cookieHeader(for: "claude.ai") == nil {
-            Self.log.notice("reconcile: no claude.ai cookies in the WebKit store → logged out")
-            setAuthenticated(false)
+        // The store loads from disk asynchronously after launch — an instant
+        // empty read is NOT evidence of being logged out. Poll briefly before
+        // concluding anything; recovery is cheap, a false logout is not.
+        for attempt in 1...6 {
+            if await cookieHeader(for: "claude.ai") != nil {
+                Self.log.notice("reconcile: claude.ai cookies present (attempt \(attempt)) → keeping session")
+                if endpointInfo != nil { setAuthenticated(true) }
+                return
+            }
+            try? await Task.sleep(nanoseconds: 500_000_000)
         }
+        Self.log.notice("reconcile: no claude.ai cookies after 3s of retries → logged out")
+        setAuthenticated(false)
     }
 
     // MARK: - Capture (endpoint discovery)
