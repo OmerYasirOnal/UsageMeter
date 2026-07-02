@@ -89,6 +89,17 @@ So we pivoted to local-only and **expired build 2** so it can't be submitted.
   needed; APPSTORE menu bar defaults to showing today's API value. Both build
   variants verified (`swift build` and `swift build -Xswiftc -DAPPSTORE`).
   Version/build numbers NOT bumped yet — do that when submitting 0.2.1.
+- **Team snapshot Stage 0 (2026-07-02)** — branch `feat/team-snapshot`, spec
+  `docs/superpowers/specs/2026-07-02-team-snapshot-design.md`: serverless
+  team/admin first step. `TeamSummary` (`.umteam`, schemaVersion 1, stats-only —
+  a test locks "no project/path leakage") + `TeamMemberRow` in Kit;
+  Dashboard ▸ Export ▸ "Team summary (.umteam)"; Team card imports files
+  (panel + drag-drop), persists copies under App Support/UsageMeter/team/
+  (newer file per member wins), table (tokens/API value/7-day Δ/last active) +
+  per-member bar chart. Stage 1 (Supabase backend, invites, consent flow)
+  stays a separate spec cycle. Also this session: popover Settings button fixed
+  (`openSettings` action), GitHub update check (daily silent + About button +
+  popover row), heatmap quartile levels, VERSION bumped to 0.2.2 (5).
 - **Settings rebuild + app-wide appearance + chart analysis (2026-07-02)** —
   branch `feat/settings-appearance`, spec
   `docs/superpowers/specs/2026-07-02-settings-appearance-analysis-design.md`:
