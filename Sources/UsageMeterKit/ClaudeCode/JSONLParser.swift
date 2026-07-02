@@ -13,6 +13,23 @@ import Foundation
 /// `uuid`, `timestamp`, `message.model`, and `message.usage.*` (numeric token
 /// counts only, incl. the nested `usage.cache_creation` TTL split). Message
 /// content (`message.content`) is never touched.
+/// The outcome of an incremental (offset-resumed) parse pass.
+public struct IncrementalParseResult: Sendable, Equatable {
+    public let records: [UsageRecord]
+    /// Absolute offset of the first UNCONSUMED byte (start of the trailing
+    /// partial line, if any) — feed this to the next call's `fromByteOffset`.
+    public let parsedBytes: Int
+    /// Newline-terminated lines consumed up to `parsedBytes` (absolute) —
+    /// feed this to the next call's `lineIndexBase`.
+    public let parsedLines: Int
+
+    public init(records: [UsageRecord], parsedBytes: Int, parsedLines: Int) {
+        self.records = records
+        self.parsedBytes = parsedBytes
+        self.parsedLines = parsedLines
+    }
+}
+
 public struct JSONLParser: Sendable {
     public init() {}
 
@@ -22,10 +39,46 @@ public struct JSONLParser: Sendable {
         return parse(data: data, projectID: projectID, source: url.lastPathComponent)
     }
 
+    /// Incremental parse for append-only session logs: seek to `fromByteOffset`,
+    /// parse the tail. Only newline-terminated lines are CONSUMED (offsets move
+    /// past them); a trailing partial line is still parsed opportunistically —
+    /// same completeness as the whole-file parse — but will be re-read next
+    /// pass, and the aggregator's id-dedup drops the repeat. `lineIndexBase`
+    /// keeps synthetic ids (`project/file#line`) identical to a one-shot parse.
+    public func parseIncremental(
+        fileAt url: URL,
+        projectID: String,
+        fromByteOffset offset: Int = 0,
+        lineIndexBase: Int = 0
+    ) -> IncrementalParseResult {
+        guard let handle = try? FileHandle(forReadingFrom: url) else {
+            return IncrementalParseResult(records: [], parsedBytes: offset, parsedLines: lineIndexBase)
+        }
+        defer { try? handle.close() }
+        guard (try? handle.seek(toOffset: UInt64(offset))) != nil,
+              let data = try? handle.readToEnd(), !data.isEmpty else {
+            return IncrementalParseResult(records: [], parsedBytes: offset, parsedLines: lineIndexBase)
+        }
+        var consumedBytes = 0
+        var consumedLines = 0
+        if let lastNewline = data.lastIndex(of: 0x0A) {
+            consumedBytes = lastNewline - data.startIndex + 1
+            consumedLines = data[..<(lastNewline + 1)].reduce(into: 0) { if $1 == 0x0A { $0 += 1 } }
+        }
+        let records = parse(data: data, projectID: projectID,
+                            source: url.lastPathComponent, lineIndexBase: lineIndexBase)
+        return IncrementalParseResult(records: records,
+                                      parsedBytes: offset + consumedBytes,
+                                      parsedLines: lineIndexBase + consumedLines)
+    }
+
     /// Parse raw JSONL bytes.
     /// - Parameter source: a short identifier (e.g. filename) used only to synthesize
     ///   a stable id for the rare record that has neither `requestId` nor `uuid`.
-    public func parse(data: Data, projectID: String, source: String = "") -> [UsageRecord] {
+    /// - Parameter lineIndexBase: starting line index for synthetic ids (used by
+    ///   `parseIncremental` so resumed passes number lines like a one-shot parse).
+    public func parse(data: Data, projectID: String, source: String = "",
+                      lineIndexBase: Int = 0) -> [UsageRecord] {
         guard !data.isEmpty else { return [] }
 
         let isoWithFraction = ISO8601DateFormatter()
@@ -38,6 +91,7 @@ public struct JSONLParser: Sendable {
         // is skipped per-line below.
         let text = String(decoding: data, as: UTF8.self)
         return parse(text: text, projectID: projectID, source: source,
+                     lineIndexBase: lineIndexBase,
                      isoWithFraction: isoWithFraction, isoPlain: isoPlain)
     }
 
@@ -45,11 +99,12 @@ public struct JSONLParser: Sendable {
         text: String,
         projectID: String,
         source: String,
+        lineIndexBase: Int,
         isoWithFraction: ISO8601DateFormatter,
         isoPlain: ISO8601DateFormatter
     ) -> [UsageRecord] {
         var records: [UsageRecord] = []
-        var lineIndex = -1
+        var lineIndex = lineIndexBase - 1
 
         text.enumerateLines { line, _ in
             lineIndex += 1

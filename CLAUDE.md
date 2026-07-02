@@ -8,7 +8,7 @@ menu-bar-only (`LSUIElement`), built with SwiftPM (+ an XcodeGen target for the 
 > open-sourced + released (github.com/OmerYasirOnal/UsageMeter, v0.1.0), App-Store-prepped
 > but **not submitted**. App icon **done** (code-generated `gaugefill`; `make icon`).
 > Next: README screenshots (capture demo via `make demo`), then notarize the download /
-> App Store. 132 tests pass.
+> App Store. 144 tests pass.
 
 ## Architecture: three decoupled sources
 
@@ -69,19 +69,19 @@ authenticated access is a **Terms-of-Service grey area**. Mitigations baked in:
     to be tightened from the real capture), `AccountRefreshPolicy` (adaptive
     cadence), provider protocols + `AccountHosts` first-party allowlist. App side:
     `AccountAuth` (WebKit cookies/capture/logout) + `AccountLoginView`.
-  - `Store/` — `UsageStore` (Source-B Codable cache, `cache.json` v3) and
+  - `Store/` — `UsageStore` (Source-B Codable cache, `cache.json` v4) and
     `StatusStore` (Source-C last-good status, `status.json`) — separate files so the
     sources are decoupled in persistence too. GRDB is a planned M3 upgrade.
   - `Engine/` — `DataEngine` (actor; injects all three source seams) + config/snapshot types.
   - `Resources/pricing.json` — editable rate table (ESTIMATES; verify officially).
 - `Sources/UsageMeter/` — thin SwiftUI shell (`@MainActor AppModel` bridges to the actor).
-- `Tests/UsageMeterKitTests/` — 132 fixture/mock-based unit tests (dedup, cost, block
+- `Tests/UsageMeterKitTests/` — 144 fixture/mock-based unit tests (dedup, cost, block
   math, status decoding, incremental scan, store round-trips, DataEngine end-to-end
   orchestration) — no live network or real user data required.
 
 ## Build / run
 
-- `make test` → `swift test` (132 tests, headless, no network/real-data needed).
+- `make test` → `swift test` (144 tests, headless, no network/real-data needed).
 - `make app`  → assembles `UsageMeter.app` (release) with a proper `Info.plist` + icon.
 - `make icon` → regenerates the app icon **from code** (pure CoreGraphics, headless)
   → `Resources/AppIcon.icns` + `Resources/Assets.xcassets/AppIcon.appiconset/`. Edit
@@ -97,7 +97,12 @@ authenticated access is a **Terms-of-Service grey area**. Mitigations baked in:
   `subagents/` path, and `JSONLParser` skips `isSidechain == true` records. (On a
   real machine ~97% of `.jsonl` files are under `subagents/`.)
 - **Incremental scan**: `UsageStore` caches parsed records per file keyed by
-  path + (mtime, size); unchanged files are never re-read.
+  path + (mtime with sub-second tolerance, size); unchanged files are never
+  re-read, and files that only GREW are parsed from the stored byte offset
+  (append-only fast path — the active session file no longer costs a full
+  re-parse every tick). Records are stored globally deduped (deterministic
+  sorted-path ownership); any file removal triggers a full rebuild so records
+  owned by the removed file are recovered from surviving files. Cache v4.
 - **Cost model** (per 1M tokens): input×rate, cache-write×rate×1.25 (5-min TTL)
   or ×2.0 (1-hour TTL, from the `usage.cache_creation` split),
   cache-read×rate×0.10, output×outputRate. Unknown families (incl. `<synthetic>`)

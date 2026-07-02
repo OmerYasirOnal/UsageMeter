@@ -440,6 +440,112 @@ final class ScriptedAccountClient: AccountUsageClient, @unchecked Sendable {
         #expect(!reloaded.files.isEmpty)
     }
 
+    @Test func appendFastPathReadsOnlyTheTail() throws {
+        let (root, storeDir) = try makeRootAndStore()
+        defer { try? fm.removeItem(at: root); try? fm.removeItem(at: storeDir) }
+        let session = root.appendingPathComponent("projA/s1.jsonl")
+        let store = UsageStore(directory: storeDir)
+        let source = LocalClaudeCodeSource(store: store, pricing: .defaults)
+        _ = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_000))
+
+        // Grow the file: REWRITE the first line with a new id AND append one.
+        // The fast path must pick up only the appended tail — the prefix edit
+        // stays invisible (append-only trade-off, fixed by any shrink).
+        let rewritten = #"{"type":"assistant","requestId":"r1-EDITED","timestamp":"2026-06-30T10:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":100}}}"#
+        let appended = #"{"type":"assistant","requestId":"r-tail","timestamp":"2026-06-30T12:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":7}}}"#
+        try Data((rewritten + "\n" + appended + "\n").utf8).write(to: session)
+
+        let stats = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_060))
+        let cached = UsageStore(directory: storeDir).load().files.values.first
+        let ids = Set((cached?.records ?? []).map(\.id))
+        #expect(ids.contains("r1"))          // prefix NOT re-read
+        #expect(!ids.contains("r1-EDITED"))
+        #expect(ids.contains("r-tail"))      // tail parsed
+        #expect(stats.recordCount == 2)
+        #expect((cached?.parsedBytes ?? 0) > 0)
+    }
+
+    @Test func shrinkForcesFullReparse() throws {
+        let (root, storeDir) = try makeRootAndStore()
+        defer { try? fm.removeItem(at: root); try? fm.removeItem(at: storeDir) }
+        let session = root.appendingPathComponent("projA/s1.jsonl")
+        let source = LocalClaudeCodeSource(store: UsageStore(directory: storeDir), pricing: .defaults)
+        _ = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_000))
+
+        // Genuinely SMALLER than the original line (short id + 1-digit tokens),
+        // so the append fast path must not trigger.
+        let replacement = #"{"type":"assistant","requestId":"n","timestamp":"2026-06-30T13:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":5}}}"#
+        try Data((replacement + "\n").utf8).write(to: session)
+
+        let stats = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_060))
+        #expect(stats.recordCount == 1)
+        #expect(stats.total.outputTokens == 5)
+    }
+
+    @Test func crossFileDuplicateIsStoredOnceWithDeterministicOwner() throws {
+        let (root, storeDir) = try makeRootAndStore()   // projA/s1.jsonl holds r1
+        defer { try? fm.removeItem(at: root); try? fm.removeItem(at: storeDir) }
+        // A resumed session in projB repeats r1 verbatim and adds r2.
+        let dupe = #"{"type":"assistant","requestId":"r1","timestamp":"2026-06-30T10:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":100}}}"#
+        let fresh = #"{"type":"assistant","requestId":"r2","timestamp":"2026-06-30T11:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":50}}}"#
+        let resumed = root.appendingPathComponent("projB/s2.jsonl")
+        try fm.createDirectory(at: resumed.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data((dupe + "\n" + fresh + "\n").utf8).write(to: resumed)
+
+        let store = UsageStore(directory: storeDir)
+        let source = LocalClaudeCodeSource(store: store, pricing: .defaults)
+        let stats = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_000))
+        #expect(stats.recordCount == 2)
+
+        let cache = UsageStore(directory: storeDir).load()
+        let stored = cache.files.values.flatMap(\.records)
+        #expect(stored.count == 2)                                   // r1 stored ONCE
+        let r1 = stored.first { $0.id == "r1" }
+        #expect(r1?.projectID == "projA")                            // sorted-path owner
+    }
+
+    @Test func removingTheOwnerFileRecoversTheSharedRecord() throws {
+        let (root, storeDir) = try makeRootAndStore()   // projA/s1.jsonl holds r1 (owner)
+        defer { try? fm.removeItem(at: root); try? fm.removeItem(at: storeDir) }
+        let dupe = #"{"type":"assistant","requestId":"r1","timestamp":"2026-06-30T10:00:00.000Z","message":{"model":"claude-opus-4-8","usage":{"output_tokens":100}}}"#
+        let resumed = root.appendingPathComponent("projB/s2.jsonl")
+        try fm.createDirectory(at: resumed.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data((dupe + "\n").utf8).write(to: resumed)
+
+        let source = LocalClaudeCodeSource(store: UsageStore(directory: storeDir), pricing: .defaults)
+        _ = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_000))
+
+        // Prune the owner. The suppressed copy in projB must be recovered
+        // (removals trigger a full rebuild), not silently lost.
+        try fm.removeItem(at: root.appendingPathComponent("projA/s1.jsonl"))
+        let stats = source.refresh(roots: [root], now: Date(timeIntervalSince1970: 1_800_000_060))
+        #expect(stats.recordCount == 1)
+        #expect(stats.total.outputTokens == 100)
+    }
+
+    @Test func cacheLoadsLazilyOnFirstAccessNotInit() throws {
+        let storeDir = fm.temporaryDirectory.appendingPathComponent("um-lazy-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fm.removeItem(at: storeDir) }
+        let store = UsageStore(directory: storeDir)
+
+        // Seed cache A on disk, construct the source, then REPLACE with cache B
+        // before anything is accessed. A lazy loader sees B; an eager init
+        // would have latched A.
+        let record = UsageRecord(id: "lazy-1", model: "claude-opus-4-8",
+                                 timestamp: Date(timeIntervalSince1970: 1_800_000_000),
+                                 usage: TokenUsage(outputTokens: 1), projectID: "p")
+        store.save(CacheData(files: ["a": CachedFile(
+            stamp: FileStamp(modifiedAt: Date(timeIntervalSince1970: 1), size: 1),
+            projectID: "p", records: [])]))
+        let source = LocalClaudeCodeSource(store: store, pricing: .defaults)
+        store.save(CacheData(files: ["b": CachedFile(
+            stamp: FileStamp(modifiedAt: Date(timeIntervalSince1970: 2), size: 2),
+            projectID: "p", records: [record])]))
+
+        let stats = source.cachedStats(now: Date(timeIntervalSince1970: 1_800_000_100))
+        #expect(stats.recordCount == 1)   // saw cache B → load happened on access
+    }
+
     @Test func genuineRemovalStillDropsRecords() throws {
         // The wipe guard must not break normal removal semantics: when the scan
         // still sees the root but one file is gone, its records are dropped.
