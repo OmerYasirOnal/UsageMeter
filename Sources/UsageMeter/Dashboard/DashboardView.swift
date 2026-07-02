@@ -48,6 +48,7 @@ struct DashboardView: View {
                 claudeCodeSummary
                 if !model.snapshot.claudeCode.byModel.isEmpty { byModelCard }
                 if !model.snapshot.claudeCode.byProject.isEmpty { byProjectCard }
+                TeamCard()
                 footer
             }
             .padding(24)
@@ -84,6 +85,8 @@ struct DashboardView: View {
             Menu {
                 Button { exportCSV() } label: { Label("Export CSV (current range)", systemImage: "tablecells") }
                 Button { exportImage() } label: { Label("Export image (PNG)", systemImage: "photo") }
+                Divider()
+                Button { exportTeamSummary() } label: { Label("Team summary (.umteam)", systemImage: "person.2") }
             } label: {
                 Label("Export", systemImage: "square.and.arrow.up")
             }
@@ -555,6 +558,20 @@ struct DashboardView: View {
             Text(value).font(.title2.weight(.bold)).monospacedDigit().foregroundStyle(Theme.data)
             Text(label).font(.caption).foregroundStyle(.secondary)
         }
+    }
+
+    /// Stage-0 team exchange: write a stats-only `.umteam` summary the user can
+    /// send to their team admin (no projects, no content — see TeamSummary).
+    private func exportTeamSummary() {
+        let summary = TeamSummary.make(
+            from: model.snapshot.claudeCode,
+            member: NSFullUserName(),
+            now: Date())
+        let name = NSFullUserName().split(separator: " ").first.map(String.init) ?? "member"
+        let day = Date().formatted(.iso8601.year().month().day())
+        save(data: summary.encode(),
+             suggestedName: "\(name)-\(day).\(TeamSummary.fileExtension)",
+             type: UTType(filenameExtension: TeamSummary.fileExtension) ?? .json)
     }
 
     private func exportCSV() {
