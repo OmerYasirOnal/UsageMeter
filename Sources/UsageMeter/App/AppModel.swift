@@ -56,6 +56,12 @@ final class AppModel: ObservableObject {
             captured: auth,
             onAuthResult: { [weak auth] ok in
                 Task { @MainActor in auth?.setAuthenticated(ok) }
+            },
+            // Persist rotated/extended session cookies back into the WebKit
+            // store so the login self-renews instead of dying at its original
+            // expiry ("remember me for a long time").
+            onSetCookies: { [weak auth] cookies in
+                Task { @MainActor in auth?.storeCookies(cookies) }
             }
         )
         #endif

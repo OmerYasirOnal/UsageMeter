@@ -315,6 +315,53 @@ final class MockURLProtocol: URLProtocol {
         #expect(box.value == nil)                     // auth NOT signalled false
     }
 
+    @Test func refreshedCookiesAreHandedBackForPersistence() async throws {
+        // claude.ai rotates/extends session cookies via Set-Cookie on replay
+        // responses; the client must surface them so the app can write them back
+        // to the WebKit store (otherwise the stored session dies at its original
+        // expiry and the user gets logged out early).
+        let url = info.resolvedURL!
+        MockURLProtocol.responder = { _ in
+            let body = #"{"five_hour":{"utilization":10,"resets_at":"2026-06-30T15:00:00Z"}}"#
+            let resp = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: [
+                "Content-Type": "application/json",
+                "Set-Cookie": "sessionKey=rotated-value; Domain=claude.ai; Path=/; Max-Age=31536000",
+            ])!
+            return (resp, Data(body.utf8))
+        }
+        defer { MockURLProtocol.responder = nil }
+        let box = CookieBox()
+        let client = LiveAccountUsageClient(
+            session: StubSession(header: "sessionKey=old", logged: true),
+            endpoint: StubEndpoint(info: info),
+            urlSession: mockedSession(),
+            decode: { AccountUsageDecoder.decode($0, now: fixedNow) },
+            onSetCookies: { box.set($0) })
+        _ = try await client.currentUsage()
+        let cookies = box.value
+        #expect(cookies?.count == 1)
+        #expect(cookies?.first?.name == "sessionKey")
+        #expect(cookies?.first?.value == "rotated-value")
+    }
+
+    @Test func noSetCookieHeaderMeansNoCallback() async throws {
+        let url = info.resolvedURL!
+        MockURLProtocol.responder = { _ in
+            (HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil,
+                             headerFields: ["Content-Type": "application/json"])!,
+             Data(#"{"five_hour":{"utilization":10}}"#.utf8))
+        }
+        defer { MockURLProtocol.responder = nil }
+        let box = CookieBox()
+        let client = LiveAccountUsageClient(
+            session: StubSession(header: "a=1", logged: true),
+            endpoint: StubEndpoint(info: info),
+            urlSession: mockedSession(),
+            onSetCookies: { box.set($0) })
+        _ = try await client.currentUsage()
+        #expect(box.value == nil)
+    }
+
     @Test func serverErrorFallsBackToRecentCapture() async throws {
         let url = info.resolvedURL!
         MockURLProtocol.responder = { _ in
@@ -330,6 +377,14 @@ final class MockURLProtocol: URLProtocol {
         let usage = try await client.currentUsage()
         #expect(usage?.session?.displayPercent == 33) // resilient fallback on 5xx
     }
+}
+
+/// Thread-safe capture of the Set-Cookie callback value.
+final class CookieBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var stored: [HTTPCookie]?
+    func set(_ v: [HTTPCookie]) { lock.lock(); stored = v; lock.unlock() }
+    var value: [HTTPCookie]? { lock.lock(); defer { lock.unlock() }; return stored }
 }
 
 /// Thread-safe capture of the auth callback value.
