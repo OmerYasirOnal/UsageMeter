@@ -82,6 +82,10 @@ public struct ClaudeCodeStats: Codable, Sendable, Equatable {
     /// The active rolling 5-hour block (local Claude Code burn estimate), if any.
     public var activeBlock: UsageBlock?
 
+    /// How tokens typically accumulate over this user's day (last 14 complete
+    /// days) — powers the day-end forecast. Nil until enough history exists.
+    public var intradayProfile: IntradayProfile?
+
     public init(
         total: TokenUsage = .zero,
         totalEstimatedCost: Double? = nil,
@@ -92,7 +96,8 @@ public struct ClaudeCodeStats: Codable, Sendable, Equatable {
         byDay: [DailyUsage] = [],
         sessionCount: Int = 0,
         recordCount: Int = 0,
-        activeBlock: UsageBlock? = nil
+        activeBlock: UsageBlock? = nil,
+        intradayProfile: IntradayProfile? = nil
     ) {
         self.total = total
         self.totalEstimatedCost = totalEstimatedCost
@@ -104,6 +109,7 @@ public struct ClaudeCodeStats: Codable, Sendable, Equatable {
         self.sessionCount = sessionCount
         self.recordCount = recordCount
         self.activeBlock = activeBlock
+        self.intradayProfile = intradayProfile
     }
 
     public static let empty = ClaudeCodeStats()

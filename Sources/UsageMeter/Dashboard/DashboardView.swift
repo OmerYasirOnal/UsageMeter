@@ -16,6 +16,17 @@ struct DashboardView: View {
         DashboardMetrics.dailyPoints(from: model.snapshot.claudeCode)
     }
 
+    /// "On pace for ~X today" — nil until the profile has enough history.
+    private var forecast: DayEndForecast? {
+        let stats = model.snapshot.claudeCode
+        return DayEndForecast.compute(
+            tokensToday: stats.today.totalTokens,
+            costToday: stats.todayEstimatedCost,
+            now: Date(),
+            calendar: .current,
+            profile: stats.intradayProfile)
+    }
+
     var body: some View {
         // Computed once per render and threaded into the subviews.
         let all = allPoints
@@ -31,6 +42,7 @@ struct DashboardView: View {
                 }
                 historyCard(points)
                 insightsRow(insights)
+                weekdayCard(all)
                 activityCard(all)
                 claudeCodeSummary
                 if !model.snapshot.claudeCode.byModel.isEmpty { byModelCard }
@@ -171,13 +183,51 @@ struct DashboardView: View {
                     .font(.callout).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, minHeight: 200)
             } else {
-                Chart(points) { point in
-                    BarMark(
-                        x: .value("Day", point.date, unit: .day),
-                        y: .value("Tokens", point.tokens)
-                    )
-                    .foregroundStyle(Theme.chartGradient)
-                    .cornerRadius(3)
+                let trend = (range == .days7) ? [] : DashboardMetrics.movingAverage(points)
+                let today = Calendar.current.startOfDay(for: Date())
+                let projection = (range == .days7 || range == .days30)
+                    ? forecast.flatMap { f -> (date: Date, from: Int, to: Int)? in
+                        guard let todayPoint = points.last, todayPoint.date == today,
+                              f.projectedTokens > todayPoint.tokens else { return nil }
+                        return (today, todayPoint.tokens, f.projectedTokens)
+                    }
+                    : nil
+                Chart {
+                    ForEach(points) { point in
+                        BarMark(
+                            x: .value("Day", point.date, unit: .day),
+                            y: .value("Tokens", point.tokens)
+                        )
+                        .foregroundStyle(Theme.chartGradient)
+                        .cornerRadius(3)
+                    }
+                    // Today's likely remainder — same hue, translucent, capped by a
+                    // dashed rule so it can't be mistaken for real usage.
+                    if let projection {
+                        BarMark(
+                            x: .value("Day", projection.date, unit: .day),
+                            yStart: .value("Tokens", projection.from),
+                            yEnd: .value("Projected", projection.to)
+                        )
+                        .foregroundStyle(Theme.data.opacity(0.16))
+                        .cornerRadius(3)
+                        RuleMark(y: .value("Projected", projection.to))
+                            .foregroundStyle(Theme.dataMuted)
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                            .annotation(position: .top, alignment: .trailing) {
+                                Text("on pace · \(Formatting.tokens(projection.to))")
+                                    .font(.caption2).foregroundStyle(.secondary)
+                            }
+                    }
+                    ForEach(trend) { p in
+                        LineMark(
+                            x: .value("Day", p.date, unit: .day),
+                            y: .value("7-day avg", p.value)
+                        )
+                        .foregroundStyle(Theme.dataMuted)
+                        .lineStyle(StrokeStyle(lineWidth: 1.5))
+                        .interpolationMethod(.monotone)
+                    }
                 }
                 .chartYAxis {
                     AxisMarks { value in
@@ -194,7 +244,13 @@ struct DashboardView: View {
                     }
                 }
                 .frame(height: 220)
-                .animation(.easeOut(duration: 0.4), value: range)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.4), value: range)
+                if range != .days7 {
+                    HStack(spacing: 5) {
+                        Rectangle().fill(Theme.dataMuted).frame(width: 14, height: 1.5)
+                        Text("7-day average").font(.caption2).foregroundStyle(.secondary)
+                    }
+                }
             }
         }
         .card()
@@ -217,7 +273,13 @@ struct DashboardView: View {
     private func insightsRow(_ insights: UsageInsights) -> some View {
         // Icons stay neutral: the semantic color ramp is reserved for limit
         // proximity — a red flame on a neutral fact reads as a false alarm.
-        HStack(spacing: 14) {
+        // Adaptive grid: with the forecast card present this row holds 5 cards
+        // and must wrap rather than squeeze.
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 190), spacing: 14)], spacing: 14) {
+            if let forecast {
+                insightCard("gauge.with.needle", "~" + Formatting.tokens(forecast.projectedTokens),
+                            forecastLabel(forecast), .secondary)
+            }
             insightCard("chart.bar.fill", Formatting.tokens(insights.averageDailyTokens), "Avg / active day", .secondary)
             insightCard("flame.fill", insights.peak.map { Formatting.tokens($0.tokens) } ?? "—", peakLabel(insights), .secondary)
             insightCard("calendar", "\(insights.activeDays)", "Active days", .secondary)
@@ -234,6 +296,14 @@ struct DashboardView: View {
         return "Peak · \(peak.date.formatted(.dateTime.month(.abbreviated).day()))"
     }
 
+    /// Caption for the day-end forecast card ("On pace today · ≈ $560").
+    private func forecastLabel(_ forecast: DayEndForecast) -> String {
+        if model.settings.showApiValue, let cost = forecast.projectedCost {
+            return "On pace today · ≈ \(Formatting.cost(cost))"
+        }
+        return "On pace today · \(Formatting.tokens(forecast.lowTokens))–\(Formatting.tokens(forecast.highTokens))"
+    }
+
     private func insightCard(_ icon: String, _ value: String, _ label: String, _ tint: Color) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Image(systemName: icon).foregroundStyle(tint)
@@ -242,6 +312,59 @@ struct DashboardView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()
+    }
+
+    // MARK: - Weekday profile
+
+    /// Average tokens per weekday (last 12 weeks) — "which days do I actually
+    /// work". Today's weekday carries the full data ink; the rest stay muted.
+    @ViewBuilder
+    private func weekdayCard(_ allPoints: [DailyPoint]) -> some View {
+        let averages = DashboardMetrics.weekdayAverages(allPoints)
+        if averages.contains(where: { $0.averageTokens > 0 }) {
+            let todayWeekday = Calendar.current.component(.weekday, from: Date())
+            let symbols = Calendar.current.shortWeekdaySymbols // index 0 = Sunday
+            // Present in the user's week order (firstWeekday-based).
+            let ordered = orderedByFirstWeekday(averages)
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Weekly rhythm").font(.title3.bold())
+                    Text("Average tokens by weekday · last 12 weeks").font(.caption).foregroundStyle(.secondary)
+                }
+                Chart(ordered) { item in
+                    BarMark(
+                        x: .value("Weekday", symbols[item.weekday - 1]),
+                        y: .value("Tokens", item.averageTokens)
+                    )
+                    .foregroundStyle(item.weekday == todayWeekday
+                                     ? AnyShapeStyle(Theme.data)
+                                     : AnyShapeStyle(Theme.dataMuted.opacity(0.55)))
+                    .cornerRadius(3)
+                }
+                .chartXScale(domain: ordered.map { symbols[$0.weekday - 1] })
+                .chartYAxis {
+                    AxisMarks { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let i = value.as(Int.self) { Text(Formatting.axisTokens(i)).font(.caption2) }
+                        }
+                    }
+                }
+                .frame(height: 130)
+                HStack(spacing: 5) {
+                    RoundedRectangle(cornerRadius: 2).fill(Theme.data).frame(width: 10, height: 10)
+                    Text("Today").font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            .card()
+        }
+    }
+
+    private func orderedByFirstWeekday(_ averages: [WeekdayAverage]) -> [WeekdayAverage] {
+        let first = Calendar.current.firstWeekday
+        return averages.sorted {
+            ((($0.weekday - first) + 7) % 7) < ((($1.weekday - first) + 7) % 7)
+        }
     }
 
     // MARK: - Activity grid

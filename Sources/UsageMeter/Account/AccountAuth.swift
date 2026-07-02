@@ -150,6 +150,21 @@ final class AccountAuth: ObservableObject, AccountSessionProviding, AccountEndpo
         isAuthenticated = true
     }
 
+    /// Write server-refreshed cookies (from headless replays) back into the
+    /// isolated WebKit store — claude.ai rotates/extends session cookies, and
+    /// without this the stored login dies at its original expiry. First-party
+    /// hosts only; the same suffix match used when SENDING cookies.
+    func storeCookies(_ cookies: [HTTPCookie]) {
+        for cookie in cookies {
+            var domain = cookie.domain.lowercased()
+            if domain.hasPrefix(".") { domain.removeFirst() }
+            guard domain == "claude.ai" || domain.hasSuffix(".claude.ai")
+                    || domain == "claude.com" || domain.hasSuffix(".claude.com")
+                    || (testHost.map { domain == $0 } ?? false) else { continue }
+            dataStore.httpCookieStore.setCookie(cookie)
+        }
+    }
+
     // MARK: - Logout
 
     func logout() async {

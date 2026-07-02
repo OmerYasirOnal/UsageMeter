@@ -51,4 +51,52 @@ import Foundation
         #expect(insights.peak == nil)
         #expect(insights.totalCost == nil)
     }
+
+    // MARK: - Moving average
+
+    private func point(_ day: String, _ tokens: Int) -> DailyPoint {
+        let formatter = DateFormatter()
+        formatter.calendar = utcCalendar()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = utcCalendar().timeZone
+        formatter.dateFormat = "yyyy-MM-dd"
+        return DailyPoint(day: day, date: formatter.date(from: day)!, tokens: tokens, cost: nil)
+    }
+
+    @Test func movingAverageUsesTrailingWindowIncludingGaps() {
+        // Days 1–10 with 100 tokens each but day 5 missing (gap = 0 in the window).
+        var points = (1...10).filter { $0 != 5 }
+            .map { point(String(format: "2026-06-%02d", $0), 100) }
+        points = points.sorted { $0.date < $1.date }
+        let ma = DashboardMetrics.movingAverage(points, window: 7, calendar: utcCalendar())
+        #expect(ma.count == points.count)
+        // At 06-10 the trailing 7 calendar days are 06-04…06-10 with one gap:
+        // 6×100/7 ≈ 85.7.
+        let last = ma.last!
+        #expect(last.day == "2026-06-10")
+        #expect(abs(last.value - 600.0 / 7.0) < 0.001)
+        // At 06-01 the window is just that day → 100/7 (calendar window, not
+        // "points so far") keeps early values honest rather than inflated.
+        #expect(abs(ma.first!.value - 100.0 / 7.0) < 0.001)
+    }
+
+    @Test func movingAverageEmptyForNoPoints() {
+        #expect(DashboardMetrics.movingAverage([], window: 7, calendar: utcCalendar()).isEmpty)
+    }
+
+    // MARK: - Weekday averages
+
+    @Test func weekdayAveragesDivideByCalendarOccurrences() {
+        // 4 weeks of Mondays (2026-06-01, 08, 15, 22 are Mondays) at 200 each;
+        // everything else zero. Average over 4 weeks → Monday 200, others 0.
+        let mondays = ["2026-06-01", "2026-06-08", "2026-06-15", "2026-06-22"]
+        let points = mondays.map { point($0, 200) }
+        let now = TestTime.date("2026-06-28T12:00:00Z") // Sunday
+        let averages = DashboardMetrics.weekdayAverages(
+            points, weeks: 4, now: now, calendar: utcCalendar())
+        #expect(averages.count == 7)
+        let monday = averages.first { $0.weekday == 2 }!  // Calendar weekday 2 = Monday
+        #expect(monday.averageTokens == 200)
+        #expect(averages.filter { $0.weekday != 2 }.allSatisfy { $0.averageTokens == 0 })
+    }
 }

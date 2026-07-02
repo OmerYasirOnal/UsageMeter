@@ -115,7 +115,8 @@ public struct DailyAggregator: @unchecked Sendable {
             byDay: dailyUsages,
             sessionCount: totalSessions,
             recordCount: unique.count,
-            activeBlock: activeBlock
+            activeBlock: activeBlock,
+            intradayProfile: IntradayProfile.compute(records: unique, now: now, calendar: calendar)
         )
     }
 }

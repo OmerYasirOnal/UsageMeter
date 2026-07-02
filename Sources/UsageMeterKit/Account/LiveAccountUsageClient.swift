@@ -22,6 +22,11 @@ public struct LiveAccountUsageClient: AccountUsageClient {
     private let decode: @Sendable (Data) -> AccountUsage?
     /// Reports authentication outcome: true on a 2xx, false on 401/403.
     private let onAuthResult: (@Sendable (Bool) -> Void)?
+    /// Hands back cookies the server set on a replay response so the app can
+    /// persist them into the WebKit store — claude.ai rotates/extends session
+    /// cookies, and dropping those updates kills the login at its ORIGINAL
+    /// expiry (the "logged out after a while" failure mode).
+    private let onSetCookies: (@Sendable ([HTTPCookie]) -> Void)?
 
     private static let maxResponseBytes = 1_000_000
 
@@ -33,7 +38,8 @@ public struct LiveAccountUsageClient: AccountUsageClient {
         extraHeaders: [String: String] = [:],
         capturedMaxAge: TimeInterval = 600,
         decode: @escaping @Sendable (Data) -> AccountUsage? = { AccountUsageDecoder.decode($0) },
-        onAuthResult: (@Sendable (Bool) -> Void)? = nil
+        onAuthResult: (@Sendable (Bool) -> Void)? = nil,
+        onSetCookies: (@Sendable ([HTTPCookie]) -> Void)? = nil
     ) {
         self.session = session
         self.endpoint = endpoint
@@ -43,6 +49,7 @@ public struct LiveAccountUsageClient: AccountUsageClient {
         self.capturedMaxAge = capturedMaxAge
         self.decode = decode
         self.onAuthResult = onAuthResult
+        self.onSetCookies = onSetCookies
     }
 
     public var isAuthenticated: Bool {
@@ -79,6 +86,10 @@ public struct LiveAccountUsageClient: AccountUsageClient {
 
         guard let http = response as? HTTPURLResponse else {
             return await capturedFallback()
+        }
+        if let onSetCookies, let fields = http.allHeaderFields as? [String: String] {
+            let cookies = HTTPCookie.cookies(withResponseHeaderFields: fields, for: url)
+            if !cookies.isEmpty { onSetCookies(cookies) }
         }
         if http.statusCode == 401 {
             onAuthResult?(false)

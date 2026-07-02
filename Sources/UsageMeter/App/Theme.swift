@@ -40,6 +40,9 @@ enum Theme {
 
     /// Data ink: chart bars, heatmap, the gauge brand mark. Not for controls.
     static let data = Color(light: 0xC2410C, dark: 0xFB923C)
+    /// De-emphasized companion to `data` — trend lines and context bars that
+    /// must read as "same family, quieter" next to terracotta marks.
+    static let dataMuted = Color(light: 0x9A6B4F, dark: 0xB08968)
 
     static let ok = Color(light: 0x277E42, dark: 0x4ADE80)
     static let warning = Color(light: 0x96690B, dark: 0xFBBF24)
