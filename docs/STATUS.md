@@ -157,8 +157,14 @@ make xcodeproj  # generate the Xcode app target (needs XcodeGen)
 2. **Verify the Pages privacy URL is live.**
 3. ~~**App icon**~~ — ✅ **done** (code-generated `gaugefill`; `make icon`).
    Menu-bar glyph stays the SF Symbol gauge (Canvas can't render in a menu-bar label).
-4. **Apple Developer Program ($99/yr)** — unlocks (a) **notarizing the GitHub
-   download** (removes the scary Gatekeeper warning) and (b) App Store submission.
+4. ~~**Notarize the GitHub download**~~ — ✅ **done 2026-07-02, shipped as v0.2.1.**
+   Developer ID Application cert created (via the web portal with the CSR at
+   `~/.appstoreconnect/developer_id/`; identity #4 in the login keychain, team
+   9X8FDSW5D8), `make release-app` runs the full sign→notarize→staple→zip flow
+   (notarytool profile `usagemeter-notary` / ASC key). v0.2.1 GitHub release is
+   Developer-ID-signed + Apple-notarized + stapled — opens clean (verified with a
+   quarantined-download simulation: `spctl` → "Notarized Developer ID"). App Store
+   submission still pending (0.2.0 in review).
 5. ~~**App Store scope decision**~~ — ✅ **done: Option A (local-only).** `#if APPSTORE`
    compiles out Source A (verified: WebKit not linked); `PrivacyInfo.xcprivacy`
    bundled; listing copy in `docs/APP_STORE_LISTING.md`. GitHub build stays full A+B+C.
