@@ -344,6 +344,52 @@ final class MockURLProtocol: URLProtocol {
         #expect(cookies?.first?.value == "rotated-value")
     }
 
+    @Test func errorResponsesNeverPersistCookies() async throws {
+        // A 401/403 (dead session / bot challenge) may carry a Set-Cookie that
+        // CLEARS the session — writing it back would log the user out. Regression
+        // guard for exactly that incident (2026-07-02).
+        for status in [401, 403, 500] {
+            let url = info.resolvedURL!
+            MockURLProtocol.responder = { _ in
+                (HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: [
+                    "Set-Cookie": "sessionKey=deleted; Domain=claude.ai; Path=/; Max-Age=0",
+                ])!, Data())
+            }
+            defer { MockURLProtocol.responder = nil }
+            let box = CookieBox()
+            let client = LiveAccountUsageClient(
+                session: StubSession(header: "sessionKey=live", logged: true),
+                endpoint: StubEndpoint(info: info),
+                urlSession: mockedSession(),
+                onSetCookies: { box.set($0) })
+            _ = try await client.currentUsage()
+            #expect(box.value == nil, "status \(status) must not persist cookies")
+        }
+    }
+
+    @Test func expiredCookiesOnSuccessAreSkipped() async throws {
+        // Even on 2xx, an already-expired cookie is a deletion — don't write it.
+        let url = info.resolvedURL!
+        MockURLProtocol.responder = { _ in
+            let body = #"{"five_hour":{"utilization":10,"resets_at":"2026-06-30T15:00:00Z"}}"#
+            let resp = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: [
+                "Content-Type": "application/json",
+                "Set-Cookie": "sessionKey=gone; Domain=claude.ai; Path=/; Expires=Thu, 01 Jan 2015 00:00:00 GMT",
+            ])!
+            return (resp, Data(body.utf8))
+        }
+        defer { MockURLProtocol.responder = nil }
+        let box = CookieBox()
+        let client = LiveAccountUsageClient(
+            session: StubSession(header: "sessionKey=live", logged: true),
+            endpoint: StubEndpoint(info: info),
+            urlSession: mockedSession(),
+            decode: { AccountUsageDecoder.decode($0, now: fixedNow) },
+            onSetCookies: { box.set($0) })
+        _ = try await client.currentUsage()
+        #expect(box.value == nil)
+    }
+
     @Test func noSetCookieHeaderMeansNoCallback() async throws {
         let url = info.resolvedURL!
         MockURLProtocol.responder = { _ in

@@ -87,8 +87,17 @@ public struct LiveAccountUsageClient: AccountUsageClient {
         guard let http = response as? HTTPURLResponse else {
             return await capturedFallback()
         }
-        if let onSetCookies, let fields = http.allHeaderFields as? [String: String] {
+        // Persist rotated cookies ONLY from healthy responses. Error/challenge
+        // responses (401/403/5xx) can carry session-CLEARING Set-Cookie headers —
+        // writing those back would log the user out by our own hand. Same reason
+        // already-expired cookies (deletions) are skipped.
+        if let onSetCookies, (200...299).contains(http.statusCode),
+           let fields = http.allHeaderFields as? [String: String] {
             let cookies = HTTPCookie.cookies(withResponseHeaderFields: fields, for: url)
+                .filter { cookie in
+                    guard let expires = cookie.expiresDate else { return true } // session cookie
+                    return expires > Date()
+                }
             if !cookies.isEmpty { onSetCookies(cookies) }
         }
         if http.statusCode == 401 {
