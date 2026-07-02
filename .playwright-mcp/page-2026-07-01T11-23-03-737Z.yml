@@ -1,0 +1,46 @@
+- generic [active] [ref=f3e1]:
+  - banner "App Store Connect" [ref=f3e3]:
+    - generic [ref=f3e4]:
+      - heading "App Store Connect" [level=1] [ref=f3e22]:
+        - link "App Store Connect" [ref=f3e23] [cursor=pointer]:
+          - /url: /
+      - navigation "Global":
+        - generic:
+          - list:
+            - listitem [ref=f3e24]:
+              - link "Apps" [ref=f3e25] [cursor=pointer]:
+                - /url: /apps
+            - listitem [ref=f3e26]:
+              - link "Trends" [ref=f3e27] [cursor=pointer]:
+                - /url: /trends
+            - listitem [ref=f3e28]:
+              - link "Reports" [ref=f3e29] [cursor=pointer]:
+                - /url: /itc/payments_and_financial_reports
+            - listitem [ref=f3e30]:
+              - link "Business" [ref=f3e31] [cursor=pointer]:
+                - /url: /business
+            - listitem [ref=f3e32]:
+              - link "Users and Access" [ref=f3e33] [cursor=pointer]:
+                - /url: /access/users
+      - button "Ömer Yasir Önal Omer Yasir Onal Account name menu" [ref=f3e34] [cursor=pointer]:
+        - generic:
+          - img
+  - contentinfo [ref=f3e9]:
+    - generic [ref=f3e10]:
+      - list [ref=f3e35]:
+        - listitem [ref=f3e36]:
+          - link "App Store Connect" [ref=f3e37] [cursor=pointer]:
+            - /url: /apps
+      - list [ref=f3e11]:
+        - listitem [ref=f3e12]: Copyright © 2026 Apple Inc. All rights reserved. |
+        - listitem [ref=f3e13]:
+          - link "Terms of Service" [ref=f3e14] [cursor=pointer]:
+            - /url: /WebObjects/iTunesConnect.woa/wa/termsOfService
+          - text: "|"
+        - listitem [ref=f3e15]:
+          - link "Privacy Policy" [ref=f3e16] [cursor=pointer]:
+            - /url: https://www.apple.com/legal/privacy
+          - text: "|"
+        - listitem [ref=f3e17]:
+          - link "Contact Us" [ref=f3e18] [cursor=pointer]:
+            - /url: /contact-us

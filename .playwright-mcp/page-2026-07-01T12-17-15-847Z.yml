@@ -1,0 +1,161 @@
+- generic [active] [ref=f1e102]:
+  - banner "App Store Connect" [ref=f1e104]:
+    - generic [ref=f1e105]:
+      - heading "App Store Connect" [level=1] [ref=f1e110]:
+        - link "App Store Connect" [ref=f1e111] [cursor=pointer]:
+          - /url: /
+      - navigation "Global":
+        - generic:
+          - list:
+            - listitem [ref=f1e112]:
+              - link "Apps" [ref=f1e113] [cursor=pointer]:
+                - /url: /apps
+            - listitem [ref=f1e114]:
+              - link "Trends" [ref=f1e115] [cursor=pointer]:
+                - /url: /trends
+            - listitem [ref=f1e116]:
+              - link "Reports" [ref=f1e117] [cursor=pointer]:
+                - /url: /itc/payments_and_financial_reports
+            - listitem [ref=f1e118]:
+              - link "Business" [ref=f1e119] [cursor=pointer]:
+                - /url: /business
+            - listitem [ref=f1e120]:
+              - link "Users and Access" [ref=f1e121] [cursor=pointer]:
+                - /url: /access/users
+      - button "Ömer Yasir Önal Omer Yasir Onal Account name menu" [ref=f1e122] [cursor=pointer]:
+        - generic:
+          - img
+  - generic [ref=f1e125]:
+    - button "Apps menu, UsageMeter, selected" [ref=f1e129] [cursor=pointer]:
+      - generic [ref=f1e130]:
+        - generic "UsageMeter" [ref=f1e131]:
+          - img "UsageMeter" [ref=f1e132]
+        - generic [ref=f1e134]: UsageMeter
+      - img [ref=f1e136]
+    - navigation "Apps" [ref=f1e139]:
+      - generic [ref=f1e140] [cursor=pointer]:
+        - generic [ref=f1e141]: Distribution
+        - img [ref=f1e143]
+      - list:
+        - listitem:
+          - link "Distribution":
+            - /url: /apps/6786227263/distribution
+        - listitem:
+          - link "Analytics":
+            - /url: /apps/6786227263/analytics
+        - listitem:
+          - link "TestFlight":
+            - /url: /teams/3894e346-c886-4ca5-91b7-773aaa6e85bd/apps/6786227263/testflight
+        - listitem:
+          - link "Xcode Cloud":
+            - /url: /teams/3894e346-c886-4ca5-91b7-773aaa6e85bd/apps/6786227263/ci
+  - generic [ref=f1e148]:
+    - main [ref=f1e1]:
+      - generic [ref=f1e8]:
+        - generic [ref=f1e10]:
+          - heading "Pricing and Availability" [level=2] [ref=f1e14]:
+            - button "Pricing and Availability" [ref=f1e15] [cursor=pointer]:
+              - text: Pricing and Availability
+              - img [ref=f1e16]
+          - generic [ref=f1e18]:
+            - button "Save"
+        - generic [ref=f1e20]:
+          - generic [ref=f1e21]:
+            - generic [ref=f1e22]:
+              - heading "Price Schedule" [level=3] [ref=f1e24]
+              - link "All Prices and Currencies" [ref=f1e25] [cursor=pointer]:
+                - /url: /apps/6786227263/distribution/pricing-matrix
+                - paragraph [ref=f1e26]: All Prices and Currencies
+            - generic [ref=f1e28]:
+              - paragraph [ref=f1e29]:
+                - generic [ref=f1e30]:
+                  - text: Set up a starting price. The price determines the App Store price and your proceeds. To sell your app, you must have a Paid Application agreement.
+                  - link "Learn More" [ref=f1e31] [cursor=pointer]:
+                    - /url: https://developer.apple.com/help/app-store-connect/manage-app-pricing/set-a-price
+              - button "Add Pricing" [ref=f1e32] [cursor=pointer]
+          - generic [ref=f1e33]:
+            - heading "App Availability" [level=3] [ref=f1e35]
+            - generic [ref=f1e37]:
+              - paragraph [ref=f1e38]:
+                - generic [ref=f1e39]:
+                  - text: Determine where your app will be available to purchase or download. You can also make your app available for pre-order in specific countries or regions.
+                  - link "Learn More" [ref=f1e40] [cursor=pointer]:
+                    - /url: https://developer.apple.com/help/app-store-connect/manage-your-apps-availability/manage-availability-for-your-app
+              - button "Set Up Availability" [ref=f1e41] [cursor=pointer]
+          - separator [ref=f1e42]
+          - generic [ref=f1e45]:
+            - generic [ref=f1e46]:
+              - heading "Tax Category" [level=3] [ref=f1e47]
+              - generic [ref=f1e50] [cursor=pointer]: 
+              - button "Edit" [ref=f1e51]
+            - generic [ref=f1e52]: Category:App Store software
+          - separator [ref=f1e53]
+          - generic [ref=f1e54]:
+            - heading "App Distribution Methods" [level=3] [ref=f1e56]
+            - paragraph [ref=f1e58]:
+              - generic [ref=f1e59]:
+                - text: Select how you want your app distributed to users. Once your app is approved, the distribution method cannot be changed.
+                - link "Learn More" [ref=f1e60] [cursor=pointer]:
+                  - /url: https://developer.apple.com/help/app-store-connect/manage-your-apps-availability/set-distribution-methods
+            - generic [ref=f1e62]:
+              - generic [ref=f1e63]:
+                - radio "Public — Discoverable by anyone on the App Store (default) More information Offer a reduced price on the Apple School Manager for volume purchases More information" [checked] [ref=f1e64]
+                - generic [ref=f1e66]:
+                  - generic [ref=f1e68]:
+                    - generic [ref=f1e70]: Public — Discoverable by anyone on the App Store (default)
+                    - button "More information" [ref=f1e72] [cursor=pointer]: "?"
+                  - generic [ref=f1e75]:
+                    - checkbox "Offer a reduced price on the Apple School Manager for volume purchases More information" [checked] [ref=f1e76]
+                    - generic [ref=f1e80]:
+                      - generic [ref=f1e81]: Offer a reduced price on the Apple School Manager for volume purchases
+                      - button "More information" [ref=f1e83] [cursor=pointer]: "?"
+              - generic [ref=f1e84]:
+                - radio "Private — Available as a custom app on Apple Business or Apple School Manager More information" [ref=f1e85]
+                - generic [ref=f1e89]:
+                  - generic [ref=f1e91]: Private — Available as a custom app on Apple Business or Apple School Manager
+                  - button "More information" [ref=f1e93] [cursor=pointer]: "?"
+          - separator [ref=f1e94]
+          - generic [ref=f1e95]:
+            - button " Last-Compatible Version Settings" [ref=f1e98] [cursor=pointer]:
+              - text: 
+              - heading "Last-Compatible Version Settings" [level=3] [ref=f1e99]
+            - separator [ref=f1e100]
+          - button "Remove App From Sale" [disabled] [ref=f1e101]
+    - dialog "App Pricing" [ref=f1e150]:
+      - document [ref=f1e151]:
+        - generic [ref=f1e152]:
+          - heading "App Pricing" [level=2] [ref=f1e153]
+          - generic [ref=f1e154]:
+            - paragraph [ref=f1e155]: Choose your base country or region. Apple may automatically adjust prices from time to time in every country or region except your base to account for changes in tax or foreign exchange rates. You can choose a different price for an individual country or region to prevent it from being automatically adjusted.
+            - generic [ref=f1e156]:
+              - generic [ref=f1e157]: Base Country or Region
+              - button "Türkiye (TRY)" [ref=f1e186]
+            - separator [ref=f1e159]
+            - paragraph [ref=f1e160]: Choose a new price for your base country or region. Apple will provide comparable prices for all the other countries or regions based on tax or foreign exchange rates. You can edit prices for individual countries or regions in the next step.
+            - generic [ref=f1e161]:
+              - generic [ref=f1e162]:
+                - text: Price
+                - button "More information" [ref=f1e164] [cursor=pointer]: "?"
+              - button "₺0.00" [ref=f1e187]
+          - generic [ref=f1e167]:
+            - button "Cancel" [ref=f1e169] [cursor=pointer]
+            - button "Next" [ref=f1e171] [cursor=pointer]
+  - contentinfo [ref=f1e173]:
+    - generic [ref=f1e174]:
+      - list [ref=f1e175]:
+        - listitem [ref=f1e176]:
+          - link "App Store Connect" [ref=f1e177] [cursor=pointer]:
+            - /url: /apps
+      - list [ref=f1e178]:
+        - listitem [ref=f1e179]: Copyright © 2026 Apple Inc. All rights reserved. |
+        - listitem [ref=f1e180]:
+          - link "Terms of Service" [ref=f1e181] [cursor=pointer]:
+            - /url: /WebObjects/iTunesConnect.woa/wa/termsOfService
+          - text: "|"
+        - listitem [ref=f1e182]:
+          - link "Privacy Policy" [ref=f1e183] [cursor=pointer]:
+            - /url: https://www.apple.com/legal/privacy
+          - text: "|"
+        - listitem [ref=f1e184]:
+          - link "Contact Us" [ref=f1e185] [cursor=pointer]:
+            - /url: /contact-us

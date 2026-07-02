@@ -1,0 +1,68 @@
+[     641ms] [WARNING] document.domain mutation is ignored because the surrounding agent cluster is origin-keyed. @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[     659ms] [WARNING] Metrics config: No config provided via delegate or fetched via init(), using default/cached config values. @ https://appstoreconnect.apple.com/access/static/js/344.d09a59ff782b29d1.js:0
+[    1123ms] [WARNING] <meta name="apple-mobile-web-app-capable" content="yes"> is deprecated. Please include <meta name="mobile-web-app-capable" content="yes"> @ https://appstoreconnect.apple.com/apps/6786227263/distribution/pricing:0
+[    2383ms] [WARNING] An array is needed to render meta tags @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    3453ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://appstoreconnect.apple.com/partials/app-store/js/date-fns-locale-de-index-js.da22cac8.js:0
+[    3501ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    3527ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    3529ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    3530ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    3530ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    3558ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    3665ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    3804ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    3831ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4005ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4041ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4098ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4098ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4101ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4103ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4106ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4780ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4800ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4800ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4851ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4865ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4866ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4870ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4871ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4954ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    4960ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5256ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5299ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5348ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5546ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5560ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5611ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5705ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5705ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://appstoreconnect.apple.com/iris/v1/appTaxCategories/6786227263?include=category,enabledConditions&limit[enabledConditions]=100:0
+[    5715ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5716ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5723ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5723ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5724ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5775ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://appstoreconnect.apple.com/iris/v1/appPriceSchedules/6786227263/manualPrices?include=appPricePoint,territory&limit=1000:0
+[    5775ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://appstoreconnect.apple.com/iris/v2/appAvailabilities/6786227263?include=territoryAvailabilities&limit[territoryAvailabilities]=200:0
+[    5790ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5790ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5790ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5837ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://appstoreconnect.apple.com/iris/v1/appPriceSchedules/6786227263/automaticPrices?include=appPricePoint,territory&limit=1000:0
+[    5876ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5876ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5876ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5876ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5945ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5945ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5945ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    5960ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    6009ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    6009ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://appstoreconnect.apple.com/iris/v2/appAvailabilities/6786227263?include=territoryAvailabilities&limit[territoryAvailabilities]=200:0
+[    6024ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    6042ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    6050ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    6063ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    6076ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    6131ms] [WARNING] eventQueue overflow, deleting LRU events: size is: 101 which is over max size: 100 @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    8911ms] [WARNING] Metrics config: No config provided via delegate or fetched via init(), using default/cached config values. @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1
+[    8911ms] [ERROR] {appName: appstore, payload: Array(4), eventKit: logger, env: PROD} @ https://appstoreconnect.apple.com/access/static/js/container.243b4934f1512a8c.js:1

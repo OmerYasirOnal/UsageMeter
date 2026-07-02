@@ -1,0 +1,331 @@
+- generic [ref=e1]:
+  - banner "App Store Connect" [ref=e3]:
+    - generic [ref=e4]:
+      - heading "App Store Connect" [level=1] [ref=e274]:
+        - link "App Store Connect" [ref=e275] [cursor=pointer]:
+          - /url: /
+      - navigation "Global":
+        - generic:
+          - list:
+            - listitem [ref=e276]:
+              - link "Apps" [ref=e277] [cursor=pointer]:
+                - /url: /apps
+            - listitem [ref=e278]:
+              - link "Trends" [ref=e279] [cursor=pointer]:
+                - /url: /trends
+            - listitem [ref=e280]:
+              - link "Reports" [ref=e281] [cursor=pointer]:
+                - /url: /itc/payments_and_financial_reports
+            - listitem [ref=e282]:
+              - link "Business" [ref=e283] [cursor=pointer]:
+                - /url: /business
+            - listitem [ref=e284]:
+              - link "Users and Access" [ref=e285] [cursor=pointer]:
+                - /url: /access/users
+      - button "Ömer Yasir Önal Omer Yasir Onal Account name menu" [ref=e286] [cursor=pointer]:
+        - generic:
+          - img
+  - generic [ref=e289]:
+    - button "Apps menu, UsageMeter, selected" [ref=e293] [cursor=pointer]:
+      - generic [ref=e294]:
+        - generic "UsageMeter" [ref=e295]:
+          - img "UsageMeter" [ref=e296]
+        - generic [ref=e298]: UsageMeter
+      - img [ref=e300]
+    - navigation "Apps" [ref=e303]:
+      - generic [ref=e304] [cursor=pointer]:
+        - generic [ref=e305]: Distribution
+        - img [ref=e307]
+      - list:
+        - listitem:
+          - link "Distribution":
+            - /url: /apps/6786227263/distribution
+        - listitem:
+          - link "Analytics":
+            - /url: /apps/6786227263/analytics
+        - listitem:
+          - link "TestFlight":
+            - /url: /teams/3894e346-c886-4ca5-91b7-773aaa6e85bd/apps/6786227263/testflight
+        - listitem:
+          - link "Xcode Cloud":
+            - /url: /teams/3894e346-c886-4ca5-91b7-773aaa6e85bd/apps/6786227263/ci
+  - generic [ref=e311]:
+    - main [ref=e19]:
+      - generic [ref=e25]:
+        - generic: 
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e29]:
+              - generic [ref=e31]:
+                - heading "App Information" [level=2] [ref=e34]:
+                  - button "App Information" [ref=e35] [cursor=pointer]:
+                    - text: App Information
+                    - img [ref=e36]
+                - paragraph [ref=e39]: Any changes will be released with your next app version.
+              - generic [ref=e40]:
+                - button "Save"
+            - generic: 
+            - generic [ref=e42]:
+              - generic [ref=e44]:
+                - heading "Localizable Information" [level=3] [ref=e46]
+                - generic [ref=e50]:
+                  - button "English (U.S.)" [ref=e51] [cursor=pointer]:
+                    - text: English (U.S.)
+                    - img [ref=e52]
+                  - button "?" [ref=e56] [cursor=pointer]
+              - generic [ref=e59]:
+                - generic [ref=e61]:
+                  - generic [ref=e63]:
+                    - generic [ref=e64]: Name
+                    - button "More information" [ref=e66] [cursor=pointer]: "?"
+                  - textbox "Name" [ref=e68]: UsageMeter
+                  - status "Characters remaining" [ref=e70]: "20"
+                - generic [ref=e72]:
+                  - generic [ref=e74]:
+                    - generic [ref=e75]: Subtitle
+                    - button "More information" [ref=e77] [cursor=pointer]: "?"
+                  - textbox "Subtitle" [ref=e79]: Private Claude usage tracker
+                  - status "Characters remaining" [ref=e81]: "2"
+            - generic [ref=e82]:
+              - heading "General Information" [level=3] [ref=e85]
+              - generic [ref=e87]:
+                - generic [ref=e88]:
+                  - generic [ref=e89]:
+                    - generic [ref=e91]:
+                      - generic [ref=e92]: Bundle ID
+                      - button "More information" [ref=e94] [cursor=pointer]: "?"
+                    - paragraph [ref=e95]: com.omeryasir.usagemeter
+                  - generic [ref=e96]:
+                    - generic [ref=e98]:
+                      - generic [ref=e99]: SKU
+                      - button "More information" [ref=e101] [cursor=pointer]: "?"
+                    - paragraph [ref=e102]: usagemeter2026
+                  - generic [ref=e103]:
+                    - generic [ref=e105]:
+                      - generic [ref=e106]: Apple ID
+                      - button "More information" [ref=e108] [cursor=pointer]: "?"
+                    - paragraph [ref=e109]: "6786227263"
+                  - generic [ref=e110]:
+                    - generic [ref=e111]:
+                      - generic [ref=e112]:
+                        - generic [ref=e113]: Content Rights
+                        - button "More information" [ref=e115] [cursor=pointer]: "?"
+                      - button "Edit" [ref=e116] [cursor=pointer]
+                    - paragraph [ref=e119]:
+                      - button "Set Up Content Rights Information" [ref=e120] [cursor=pointer]
+                  - generic [ref=e121]:
+                    - generic [ref=e122]:
+                      - generic [ref=e123]:
+                        - generic [ref=e124]: License Agreement
+                        - button "More information" [ref=e126] [cursor=pointer]: "?"
+                      - button "Edit" [ref=e127] [cursor=pointer]
+                    - paragraph [ref=e128]:
+                      - link "Apple’s Standard License Agreement" [ref=e129] [cursor=pointer]:
+                        - /url: http://www.apple.com/legal/itunes/appstore/dev/stdeula
+                - generic [ref=e130]:
+                  - generic [ref=e131]:
+                    - generic [ref=e133]:
+                      - generic [ref=e134]: Primary Language
+                      - button "More information" [ref=e136] [cursor=pointer]: "?"
+                    - paragraph [ref=e137]: English (U.S.)
+                  - generic [ref=e138]:
+                    - generic [ref=e140]:
+                      - generic [ref=e142]:
+                        - generic [ref=e143]: Category
+                        - button "More information" [ref=e145] [cursor=pointer]: "?"
+                      - combobox "Category" [ref=e147]:
+                        - option "Primary"
+                        - option "Books"
+                        - option "Business"
+                        - option "Developer Tools" [selected]
+                        - option "Education"
+                        - option "Entertainment"
+                        - option "Finance"
+                        - option "Food & Drink"
+                        - option "Games"
+                        - option "Graphics & Design"
+                        - option "Health & Fitness"
+                        - option "Lifestyle"
+                        - option "Magazines & Newspapers"
+                        - option "Medical"
+                        - option "Music"
+                        - option "Navigation"
+                        - option "News"
+                        - option "Photo & Video"
+                        - option "Productivity"
+                        - option "Reference"
+                        - option "Shopping"
+                        - option "Social Networking"
+                        - option "Sports"
+                        - option "Stickers"
+                        - option "Travel"
+                        - option "Utilities"
+                        - option "Weather"
+                    - combobox [ref=e151]:
+                      - option "Secondary (optional)" [selected]
+                      - option "Books"
+                      - option "Business"
+                      - option "Education"
+                      - option "Entertainment"
+                      - option "Finance"
+                      - option "Food & Drink"
+                      - option "Games"
+                      - option "Graphics & Design"
+                      - option "Health & Fitness"
+                      - option "Lifestyle"
+                      - option "Magazines & Newspapers"
+                      - option "Medical"
+                      - option "Music"
+                      - option "Navigation"
+                      - option "News"
+                      - option "Photo & Video"
+                      - option "Productivity"
+                      - option "Reference"
+                      - option "Shopping"
+                      - option "Social Networking"
+                      - option "Sports"
+                      - option "Stickers"
+                      - option "Travel"
+                      - option "Utilities"
+                      - option "Weather"
+          - generic [ref=e152]:
+            - separator [ref=e153]
+            - heading "Age Ratings" [level=3] [ref=e154]
+            - generic [ref=e155]:
+              - paragraph [ref=e156]: App Age Ratings
+              - generic [ref=e157]:
+                - button "Edit" [ref=e158] [cursor=pointer]
+                - button "View Details" [ref=e160] [cursor=pointer]
+            - paragraph [ref=e161]: Users will only see the age rating that applies to their country or region on the App Store.
+            - list [ref=e163]:
+              - listitem [ref=e164] [cursor=pointer]:
+                - paragraph [ref=e165]:
+                  - generic [ref=e166]: 4+
+                - paragraph [ref=e167]: 172 countries or regions
+              - listitem [ref=e168] [cursor=pointer]:
+                - img [ref=e169]
+                - paragraph [ref=e172]: Brazil
+              - listitem [ref=e173] [cursor=pointer]:
+                - paragraph [ref=e174]:
+                  - generic [ref=e175]: All
+                - paragraph [ref=e177]: Korea, Republic of
+              - listitem [ref=e178] [cursor=pointer]:
+                - paragraph [ref=e179]:
+                  - generic [ref=e180]: 00+
+                - paragraph [ref=e182]: Vietnam
+            - generic [ref=e184]:
+              - generic [ref=e186]:
+                - generic [ref=e187]: Age Suitability URL
+                - button "More information" [ref=e189] [cursor=pointer]: "?"
+              - paragraph [ref=e190]: –
+            - paragraph [ref=e191]: Operating Systems Earlier than Version 26
+            - generic [ref=e192]:
+              - paragraph [ref=e193]: Global rating of 4+ with regional exceptions
+              - button "View Details" [ref=e194] [cursor=pointer]
+          - generic [ref=e195]:
+            - separator [ref=e196]
+            - generic [ref=e197]:
+              - heading "App Encryption Documentation" [level=3] [ref=e198]
+              - button "Upload" [ref=e199] [cursor=pointer]:
+                - img [ref=e200]
+            - paragraph [ref=e202]:
+              - generic [ref=e203]:
+                - text: Specify your use of encryption in Xcode by adding the
+                - strong [ref=e204]: App Uses Non-Exempt Encryption
+                - text: key to your app's Info.plist file with a Boolean value that indicates whether your app uses encryption.
+                - link "Learn More" [ref=e205] [cursor=pointer]:
+                  - /url: https://developer.apple.com/documentation/security/complying_with_encryption_export_regulations
+            - generic [ref=e206]:
+              - paragraph [ref=e207]: "You're required to provide documentation if your app contains any of the following:"
+              - list [ref=e208]:
+                - listitem [ref=e209]: Encryption algorithms that are proprietary or not accepted as standard by international standard bodies (IEEE, IETF, ITU, etc.)
+                - listitem [ref=e210]: Standard encryption algorithms instead of, or in addition to, using or accessing the encryption within Apple's operating system
+            - generic [ref=e212]:
+              - paragraph [ref=e213]: You can provide your documentation before you submit a build.
+              - button "Upload" [ref=e214] [cursor=pointer]
+          - generic [ref=e215]:
+            - heading "App Store Regulations & Permits" [level=3] [ref=e216]
+            - generic [ref=e217]:
+              - generic [ref=e218]:
+                - heading "Digital Services Act" [level=6] [ref=e219]
+                - generic [ref=e220]:
+                  - paragraph [ref=e221]:
+                    - text: This developer has identified itself as a trader for this app.
+                    - button "Edit" [ref=e222] [cursor=pointer]
+                  - button "Add Labels and Markings" [ref=e224] [cursor=pointer]
+              - generic [ref=e225]:
+                - heading "Vietnam Game License" [level=3] [ref=e226]
+                - generic [ref=e228]:
+                  - paragraph [ref=e229]:
+                    - generic [ref=e230]:
+                      - text: If your game is available on the App Store in Vietnam, you can add a game license as required by Vietnamese regulators.
+                      - link "Learn More" [ref=e231] [cursor=pointer]:
+                        - /url: https://developer.apple.com/help/app-store-connect/reference/app-information
+                  - button "Add" [ref=e232] [cursor=pointer]
+            - separator [ref=e233]
+          - generic [ref=e235]:
+            - heading "App Store Server Notifications" [level=3] [ref=e236]
+            - paragraph [ref=e237]:
+              - generic [ref=e238]:
+                - text: App Store server notifications provide information about key events related to your in-app purchases. To test notifications before implementing them in production, you can set up a separate sandbox server URL.
+                - link "Learn More" [ref=e239] [cursor=pointer]:
+                  - /url: https://developer.apple.com/help/app-store-connect/configure-in-app-purchase-settings/enter-server-urls-for-app-store-server-notifications
+            - generic [ref=e240]:
+              - generic [ref=e241]:
+                - generic [ref=e244]: Production Server URL
+                - paragraph [ref=e247]:
+                  - button "Set Up URL" [ref=e248] [cursor=pointer]
+              - generic [ref=e249]:
+                - generic [ref=e252]: Sandbox Server URL
+                - paragraph [ref=e255]:
+                  - button "Set Up URL" [ref=e256] [cursor=pointer]
+          - generic [ref=e257]:
+            - heading "App-Specific Shared Secret" [level=3] [ref=e258]
+            - paragraph [ref=e259]: The app-specific shared secret is a unique code to receive receipts for only this app’s auto-renewable subscriptions. You may want to use an app-specific shared secret if you’re transferring this app to another developer, or if you want to keep your primary shared secret private.
+            - paragraph [ref=e260]:
+              - button "Manage" [ref=e261] [cursor=pointer]
+            - separator [ref=e262]
+          - generic [ref=e263]:
+            - heading "Additional Information" [level=3] [ref=e264]
+            - paragraph [ref=e265]:
+              - button "View on App Store" [ref=e266] [cursor=pointer]
+            - paragraph [ref=e267]:
+              - button "Edit User Access" [ref=e268] [cursor=pointer]
+            - paragraph [ref=e269]:
+              - button "Remove App" [ref=e270] [cursor=pointer]
+    - dialog "Content Rights" [active] [ref=e313]:
+      - document [ref=e314]:
+        - generic [ref=e315]:
+          - heading "Content Rights" [level=2] [ref=e316]
+          - generic [ref=e317]:
+            - paragraph [ref=e318]: Apps that contain, show, or access third-party content must have all the necessary rights to that content or be otherwise permitted to use it under the laws of each country or region in which they're available.
+            - paragraph [ref=e319]: Does your app contain, show, or access third-party content?
+            - generic [ref=e321]:
+              - generic [ref=e322]:
+                - radio "Yes, it contains, shows, or accesses third-party content, and I have the necessary rights" [ref=e323]
+                - generic [ref=e325]: Yes, it contains, shows, or accesses third-party content, and I have the necessary rights
+              - generic [ref=e326]:
+                - radio "No, it does not contain, show, or access third-party content" [ref=e327]
+                - generic [ref=e329]: No, it does not contain, show, or access third-party content
+        - generic [ref=e331]:
+          - button "Cancel" [ref=e333] [cursor=pointer]
+          - button "Done" [ref=e335] [cursor=pointer]
+  - contentinfo [ref=e9]:
+    - generic [ref=e10]:
+      - list [ref=e336]:
+        - listitem [ref=e337]:
+          - link "App Store Connect" [ref=e338] [cursor=pointer]:
+            - /url: /apps
+      - list [ref=e11]:
+        - listitem [ref=e12]: Copyright © 2026 Apple Inc. All rights reserved. |
+        - listitem [ref=e13]:
+          - link "Terms of Service" [ref=e14] [cursor=pointer]:
+            - /url: /WebObjects/iTunesConnect.woa/wa/termsOfService
+          - text: "|"
+        - listitem [ref=e15]:
+          - link "Privacy Policy" [ref=e16] [cursor=pointer]:
+            - /url: https://www.apple.com/legal/privacy
+          - text: "|"
+        - listitem [ref=e17]:
+          - link "Contact Us" [ref=e18] [cursor=pointer]:
+            - /url: /contact-us

@@ -10,6 +10,7 @@ struct DashboardView: View {
     @State private var range: DashboardRange = .days30
     // Skip the fade-in for demo/screenshot rendering (ImageRenderer doesn't run .task).
     @State private var appeared = DemoData.isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var allPoints: [DailyPoint] {
         DashboardMetrics.dailyPoints(from: model.snapshot.claudeCode)
@@ -37,7 +38,8 @@ struct DashboardView: View {
                 footer
             }
             .padding(24)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: 920, alignment: .leading)
+            .frame(maxWidth: .infinity)
             .opacity(appeared ? 1 : 0)
             .offset(y: appeared ? 0 : 8)
         }
@@ -48,7 +50,11 @@ struct DashboardView: View {
         .task {
             // Reveal immediately with cached data — don't stay blank while a slow
             // refresh (log scan / network) runs.
-            withAnimation(.easeOut(duration: 0.45)) { appeared = true }
+            if reduceMotion {
+                appeared = true
+            } else {
+                withAnimation(.easeOut(duration: 0.45)) { appeared = true }
+            }
             await model.refresh()
         }
     }
@@ -90,7 +96,7 @@ struct DashboardView: View {
             Text(title).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
             Text("\(metric.displayPercent)%")
                 .font(.system(size: 32, weight: .bold, design: .rounded)).monospacedDigit()
-                .foregroundStyle(Theme.usageColor(metric.percent))
+                .foregroundStyle(Theme.numeralColor(metric.percent))
             UsageBar(percent: metric.percent, color: Theme.usageColor(metric.percent))
             TimelineView(.periodic(from: .now, by: 60)) { context in
                 VStack(alignment: .leading, spacing: 5) {
@@ -136,8 +142,8 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Pay-as-you-go").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
             Text(Formatting.money(spend.usedAmount, currency: spend.currency))
-                .font(.system(size: 30, weight: .bold, design: .rounded)).monospacedDigit()
-                .foregroundStyle(Theme.ok)
+                .font(.system(size: 32, weight: .bold, design: .rounded)).monospacedDigit()
+                .foregroundStyle(.primary)
             Text("real spend (this period)").font(.caption).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -170,14 +176,14 @@ struct DashboardView: View {
                         x: .value("Day", point.date, unit: .day),
                         y: .value("Tokens", point.tokens)
                     )
-                    .foregroundStyle(Theme.accent.gradient)
+                    .foregroundStyle(Theme.chartGradient)
                     .cornerRadius(3)
                 }
                 .chartYAxis {
                     AxisMarks { value in
                         AxisGridLine()
                         AxisValueLabel {
-                            if let i = value.as(Int.self) { Text(Formatting.tokens(i)).font(.caption2) }
+                            if let i = value.as(Int.self) { Text(Formatting.axisTokens(i)).font(.caption2) }
                         }
                     }
                 }
@@ -209,14 +215,16 @@ struct DashboardView: View {
     // MARK: - Insights
 
     private func insightsRow(_ insights: UsageInsights) -> some View {
+        // Icons stay neutral: the semantic color ramp is reserved for limit
+        // proximity — a red flame on a neutral fact reads as a false alarm.
         HStack(spacing: 14) {
-            insightCard("chart.bar.fill", Formatting.tokens(insights.averageDailyTokens), "Avg / active day", Theme.accent)
-            insightCard("flame.fill", insights.peak.map { Formatting.tokens($0.tokens) } ?? "—", peakLabel(insights), Theme.usageColor(90))
-            insightCard("calendar", "\(insights.activeDays)", "Active days", Theme.ok)
+            insightCard("chart.bar.fill", Formatting.tokens(insights.averageDailyTokens), "Avg / active day", .secondary)
+            insightCard("flame.fill", insights.peak.map { Formatting.tokens($0.tokens) } ?? "—", peakLabel(insights), .secondary)
+            insightCard("calendar", "\(insights.activeDays)", "Active days", .secondary)
             if model.settings.showApiValue {
-                insightCard("dollarsign.circle.fill", Formatting.cost(insights.totalCost), "API value (range)", Theme.accent)
+                insightCard("dollarsign.circle.fill", Formatting.cost(insights.totalCost), "API value (range)", .secondary)
             } else {
-                insightCard("number", Formatting.tokens(insights.totalTokens), "Total tokens (range)", Theme.accent)
+                insightCard("number", Formatting.tokens(insights.totalTokens), "Total tokens (range)", .secondary)
             }
         }
     }
@@ -293,7 +301,7 @@ struct DashboardView: View {
                     }
                     .font(.callout)
                     UsageBar(percent: Double(m.usage.totalTokens) / Double(maxTokens) * 100,
-                             color: Theme.accent, height: 6)
+                             color: Theme.data, height: 6)
                 }
             }
         }
@@ -343,7 +351,7 @@ struct DashboardView: View {
         let cc = model.snapshot.claudeCode
         return VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 8) {
-                Image(systemName: "gauge.with.dots.needle.50percent").foregroundStyle(Theme.accent)
+                Image(systemName: "gauge.with.dots.needle.50percent").foregroundStyle(Theme.data)
                 Text("UsageMeter").font(.title2.bold())
             }
             if let a = model.snapshot.account, a.hasAnyMetric {
@@ -368,7 +376,7 @@ struct DashboardView: View {
 
     private func shareStat(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(value).font(.title2.weight(.bold)).monospacedDigit().foregroundStyle(Theme.accent)
+            Text(value).font(.title2.weight(.bold)).monospacedDigit().foregroundStyle(Theme.data)
             Text(label).font(.caption).foregroundStyle(.secondary)
         }
     }

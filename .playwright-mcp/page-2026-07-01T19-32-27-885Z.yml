@@ -1,0 +1,16 @@
+- generic [active] [ref=f5e1]:
+  - main [ref=f5e2]:
+    - generic [ref=f5e3]:
+      - progressbar
+      - iframe [ref=f5e16]:
+        
+  - contentinfo "Apple Footer" [ref=f5e17]:
+    - generic [ref=f5e19]:
+      - heading "Apple Footer" [level=2] [ref=f5e20]
+      - generic [ref=f5e21]:
+        - generic [ref=f5e22]: Copyright © 2026 Apple Inc. All rights reserved.
+        - generic [ref=f5e23]:
+          - link "Privacy Policy" [ref=f5e24] [cursor=pointer]:
+            - /url: "https://www.apple.com/privacy/privacy-policy/ "
+          - link "Terms of Use" [ref=f5e25] [cursor=pointer]:
+            - /url: https://www.apple.com/legal/internet-services/terms/site.html

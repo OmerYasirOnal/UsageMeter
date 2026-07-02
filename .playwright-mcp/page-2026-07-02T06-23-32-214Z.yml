@@ -1,0 +1,52 @@
+- generic [ref=f3e3]:
+  - banner [ref=f3e4]:
+    - generic [ref=f3e6]:
+      - link "Apple Developer" [ref=f3e7] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f3e8]: Apple Developer
+      - generic [ref=f3e22]:
+        - generic [ref=f3e23] [cursor=pointer]: Ömer Yasir Önal 
+        - generic [ref=f3e24] [cursor=pointer]: Ömer Yasir Önal - 9X8FDSW5D8
+        - text: 
+    - heading "Certificates, Identifiers & Profiles" [level=1] [ref=f3e11]
+  - main [ref=f3e12]:
+    - generic [ref=f3e26]:
+      - generic [ref=f3e28]:
+        - link " All Certificates" [ref=f3e30] [cursor=pointer]:
+          - /url: /account/resources/certificates/list
+        - generic [ref=f3e31]:
+          - heading "Create a New Certificate" [level=2] [ref=f3e33]
+          - generic [ref=f3e34]:
+            - button "Back" [ref=f3e193] [cursor=pointer]
+            - button "Continue" [ref=f3e192] [cursor=pointer]
+      - group [ref=f3e194]:
+        - generic [ref=f3e195]:
+          - heading "Select a Developer ID Certificate Intermediary" [level=3] [ref=f3e196]
+          - paragraph [ref=f3e197]: Certificates issued from the Developer ID G2 intermediary certificate authority (Sub-CA) are supported by Xcode 11.4.1 or later. If you need to sign software for distribution on an earlier release, you can create a certificate associated to the previous Sub-CA and turn off Automatic Signing in Xcode. Any certificates created after Feb 01, 2022 and associated to the previous Sub-CA will expire on Feb 01, 2027.
+          - group [ref=f3e198]:
+            - generic [ref=f3e199]:
+              - generic [ref=f3e200]: "Profile Type:"
+              - generic [ref=f3e201]:
+                - radio "G2 Sub-CA (Xcode 11.4.1 or later)" [checked] [ref=f3e202]
+                - generic [ref=f3e203]: G2 Sub-CA (Xcode 11.4.1 or later)
+                - radio "Previous Sub-CA" [ref=f3e204]
+                - generic [ref=f3e205]: Previous Sub-CA
+        - paragraph [ref=f3e206]:
+          - text: To manually generate a Certificate, you need a Certificate Signing Request (CSR) file from your Mac.
+          - link "Learn more " [ref=f3e207] [cursor=pointer]:
+            - /url: https://developer.apple.com/help/account/create-certificates/create-a-certificate-signing-request
+        - generic [ref=f3e209]:
+          - button "Choose File" [active] [ref=f3e210] [cursor=pointer]
+          - generic [ref=f3e211]:
+            - strong [ref=f3e212]: Choose File
+            - generic [ref=f3e213]: devid_application.csr
+  - contentinfo [ref=f3e13]:
+    - generic [ref=f3e15]:
+      - paragraph [ref=f3e16]: Copyright © 2026 Apple Inc. All rights reserved.
+      - list [ref=f3e17]:
+        - listitem [ref=f3e18]:
+          - link "Terms of Use" [ref=f3e19] [cursor=pointer]:
+            - /url: https://www.apple.com/legal/terms/site.html
+        - listitem [ref=f3e20]:
+          - link "Privacy Policy" [ref=f3e21] [cursor=pointer]:
+            - /url: https://www.apple.com/privacy/
