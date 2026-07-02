@@ -2,6 +2,7 @@
 import Foundation
 import Combine
 import WebKit
+import os
 import UsageMeterKit
 
 /// The app-side bridge for Source A: owns an isolated, persistent
@@ -30,6 +31,10 @@ final class AccountAuth: ObservableObject, AccountSessionProviding, AccountEndpo
     private let discoveryFileURL: URL
     /// Host allowed in addition to claude.* for local self-tests (mock mode only).
     private let testHost: String?
+
+    /// Auth-lifecycle log (view with: `log stream --predicate 'subsystem == "com.omeryasir.usagemeter"'`).
+    /// Exists to make the NEXT "logged out by itself" incident attributable.
+    private static let log = Logger(subsystem: "com.omeryasir.usagemeter", category: "account")
 
     private static let storeIdentifier = UUID(uuidString: "F1A2B3C4-D5E6-4789-9012-3456789ABCDE")!
     /// Path tokens that mark a usage-related (not conversation/account) endpoint.
@@ -85,13 +90,17 @@ final class AccountAuth: ObservableObject, AccountSessionProviding, AccountEndpo
     /// Called from the headless client's auth callback. `false` on 401/403 marks
     /// the session dead and invalidates any captured fallback.
     func setAuthenticated(_ value: Bool) {
-        if isAuthenticated != value { isAuthenticated = value }
+        if isAuthenticated != value {
+            Self.log.notice("auth state \(self.isAuthenticated) → \(value) (from replay result)")
+            isAuthenticated = value
+        }
         if !value, lastCaptured != nil { lastCaptured = nil }
     }
 
     private func reconcileLoginState() async {
         // No claude cookies at all → definitely logged out.
         if await cookieHeader(for: "claude.ai") == nil {
+            Self.log.notice("reconcile: no claude.ai cookies in the WebKit store → logged out")
             setAuthenticated(false)
         }
     }
@@ -168,6 +177,7 @@ final class AccountAuth: ObservableObject, AccountSessionProviding, AccountEndpo
     // MARK: - Logout
 
     func logout() async {
+        Self.log.notice("logout: user-initiated wipe")
         await removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes())
         endpointStore.clear()
         try? FileManager.default.removeItem(at: captureFileURL)

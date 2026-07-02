@@ -58,15 +58,19 @@ final class AppModel: ObservableObject {
             session: auth,
             endpoint: auth,
             captured: auth,
+            // Replay with the SAME user agent as the login WebView: Cloudflare's
+            // clearance cookie is UA-bound, and replaying WebView cookies under a
+            // different UA reads as bot traffic — the prime suspect for sessions
+            // being killed server-side within the hour (2026-07-02 incident).
+            extraHeaders: ["User-Agent": AccountLoginView.safariUserAgent],
             onAuthResult: { [weak auth] ok in
                 Task { @MainActor in auth?.setAuthenticated(ok) }
-            },
-            // Persist rotated/extended session cookies back into the WebKit
-            // store so the login self-renews instead of dying at its original
-            // expiry ("remember me for a long time").
-            onSetCookies: { [weak auth] cookies in
-                Task { @MainActor in auth?.storeCookies(cookies) }
             }
+            // NOTE: cookie write-back (onSetCookies/auth.storeCookies) is
+            // deliberately NOT wired. Re-storing cookies via HTTPCookie can drop
+            // attributes (HttpOnly) and desync the WebKit store — it coincided
+            // with repeated same-day logouts. The Kit capability + tests stay
+            // for a future, better-understood attempt.
         )
         #endif
         self.engine = DataEngine(
