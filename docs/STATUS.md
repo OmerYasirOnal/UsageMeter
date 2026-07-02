@@ -89,6 +89,16 @@ So we pivoted to local-only and **expired build 2** so it can't be submitted.
   needed; APPSTORE menu bar defaults to showing today's API value. Both build
   variants verified (`swift build` and `swift build -Xswiftc -DAPPSTORE`).
   Version/build numbers NOT bumped yet — do that when submitting 0.2.1.
+- **Phantom-logout ROOT CAUSE + v0.2.3 (2026-07-02)** — the "logged out after
+  a relaunch" incident class was never a real logout: `WKWebsiteDataStore
+  (forIdentifier:)` doesn't load on-disk cookies until a WebView spins up its
+  network process, so post-relaunch reads saw an empty store and flipped auth
+  false while 18 claude cookies sat intact on disk. Fix: zero-frame warmup
+  WebView at AccountAuth init + reconcile retries (3s) that RE-assert auth when
+  cookies appear. Verified live twice ("cookies present (attempt 1) → keeping
+  session"; no re-login needed). Shipped as notarized v0.2.3 (GitHub +
+  Homebrew cask bumped). Earlier same-day hardening kept: replay uses the
+  WebView's Safari UA; cookie write-back stays unwired.
 - **App Store 0.2.2 prepped (2026-07-02)** — decision: keep 0.2.0 in review
   (pulling it resets the queue + invites metadata mismatch); build 0.2.2 (5)
   (`APPSTORE` local-only variant) archived headlessly (xcodebuild + ASC API
