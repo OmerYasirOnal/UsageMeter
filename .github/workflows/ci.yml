@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Test + both build variants
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: swift --version
+
+      - name: Test (headless UsageMeterKit suite)
+        run: swift test
+
+      - name: Build — full variant (GitHub / Homebrew download)
+        run: swift build
+
+      - name: Build — APPSTORE variant (local-only, Source A compiled out)
+        run: swift build -Xswiftc -DAPPSTORE

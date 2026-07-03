@@ -24,3 +24,7 @@ UsageMeter-macOS.zip
 
 # Xcode build output
 build/
+
+# stray release/screenshot artifacts
+UsageMeter-macOS.zip
+pricing_page.png
