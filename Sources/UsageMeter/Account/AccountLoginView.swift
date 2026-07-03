@@ -42,6 +42,7 @@ struct AccountLoginView: NSViewRepresentable {
 
         let userContent = WKUserContentController()
         userContent.add(context.coordinator, name: Self.messageName)
+        userContent.add(context.coordinator, name: Self.loginFlowMessageName)
         userContent.addUserScript(WKUserScript(
             source: Self.captureScript, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         config.userContentController = userContent
@@ -70,6 +71,7 @@ struct AccountLoginView: NSViewRepresentable {
 
     static func dismantleNSView(_ nsView: WKWebView, coordinator: Coordinator) {
         nsView.configuration.userContentController.removeScriptMessageHandler(forName: messageName)
+        nsView.configuration.userContentController.removeScriptMessageHandler(forName: loginFlowMessageName)
         nsView.configuration.userContentController.removeAllUserScripts()
     }
 
@@ -79,6 +81,7 @@ struct AccountLoginView: NSViewRepresentable {
         private let auth: AccountAuth
         private let controller: LoginWebController
         private var requestedUsage = false
+        private var autofillInjected = false
         private var popupWindow: NSWindow?
         private var popupWebView: WKWebView?
 
@@ -89,6 +92,13 @@ struct AccountLoginView: NSViewRepresentable {
 
         func userContentController(_ controller: WKUserContentController,
                                    didReceive message: WKScriptMessage) {
+            if message.name == AccountLoginView.loginFlowMessageName {
+                guard let dict = message.body as? [String: Any],
+                      dict["event"] as? String == "codeScreen" else { return }
+                let flowController = self.controller
+                Task { @MainActor in flowController.flow.codeScreenDetected() }
+                return
+            }
             guard message.name == AccountLoginView.messageName,
                   let dict = message.body as? [String: Any],
                   let url = dict["url"] as? String, !url.isEmpty else { return }
@@ -113,7 +123,14 @@ struct AccountLoginView: NSViewRepresentable {
             let path = url.path.lowercased()
             if path.contains("login") || path.contains("auth") || path.contains("oauth") || path.contains("magic") {
                 requestedUsage = false   // back in the login flow → re-arm
-                MainActor.assumeIsolated { controller.flow.backOnLoginPage() }
+                MainActor.assumeIsolated {
+                    controller.flow.backOnLoginPage() // no-op during autofill (expected page)
+                    if case .autofilling = controller.flow.phase,
+                       let email = controller.pendingEmail, !autofillInjected {
+                        autofillInjected = true
+                        webView.evaluateJavaScript(AccountLoginView.autofillScript(email: email))
+                    }
+                }
                 return
             }
             // Logged in — drop the curtain BEFORE any usage content can render.
@@ -177,6 +194,7 @@ struct AccountLoginView: NSViewRepresentable {
     // MARK: - Constants
 
     static let messageName = "usageProbe"
+    static let loginFlowMessageName = "loginFlow"
     static let usagePageURL = URL(string: "https://claude.ai/settings/usage")!
     static let loginPageURL = URL(string: "https://claude.ai/login")!
     static let safariUserAgent =
@@ -254,6 +272,68 @@ struct AccountLoginView: NSViewRepresentable {
       } catch (e) {}
     })();
     """#
+
+    /// Fills claude.ai's email login form (React controlled input → native
+    /// value setter + `input` event), submits it once, and reports when the
+    /// verification-code screen appears. The email string is JSON-encoded so
+    /// arbitrary user input cannot escape the script.
+    static func autofillScript(email: String) -> String {
+        let encoded = (try? JSONEncoder().encode([email]))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? #"[""]"#
+        return """
+        (function () {
+          var email = \(encoded)[0];
+          var submitted = false;
+          var reportedCode = false;
+          function fill() {
+            if (submitted) return;
+            var input = document.querySelector('input#email, input[data-testid="email"], input[type="email"]');
+            if (!input) return;
+            try {
+              var setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+              setter.call(input, email);
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              var form = input.closest('form');
+              if (form && form.requestSubmit) { form.requestSubmit(); }
+              else {
+                var btn = (form || document).querySelector('button[type=submit]');
+                if (!btn) return;
+                btn.click();
+              }
+              submitted = true;
+            } catch (e) {}
+          }
+          function isCodeInput(el) {
+            var s = ((el.getAttribute('placeholder') || '') + ' ' +
+                     (el.getAttribute('data-testid') || '') + ' ' +
+                     (el.getAttribute('autocomplete') || '') + ' ' +
+                     (el.id || '')).toLowerCase();
+            return s.indexOf('code') > -1 || s.indexOf('one-time') > -1;
+          }
+          function codeScreenVisible() {
+            var inputs = document.querySelectorAll('input');
+            for (var i = 0; i < inputs.length; i++) { if (isCodeInput(inputs[i])) return true; }
+            return false;
+          }
+          function check() {
+            fill();
+            if (!reportedCode && codeScreenVisible()) {
+              reportedCode = true;
+              try {
+                window.webkit.messageHandlers.loginFlow.postMessage({ kind: 'loginFlow', event: 'codeScreen' });
+              } catch (e) {}
+            }
+            if (submitted && reportedCode) { stop(); }
+          }
+          var timer = setInterval(check, 400);
+          var observer = new MutationObserver(check);
+          function stop() { clearInterval(timer); observer.disconnect(); }
+          observer.observe(document.documentElement, { childList: true, subtree: true });
+          setTimeout(stop, 20000);
+          check();
+        })();
+        """
+    }
 }
 
 /// Window content hosting the email step and the login WebView with a toolbar.
