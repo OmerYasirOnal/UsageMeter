@@ -32,9 +32,16 @@ compiled out of the App Store build (it lives only in the GitHub download).
 > • Open source (MIT).
 >
 > Menu-bar only. On first run you grant read access to your `~/.claude` folder once.
+>
+> UsageMeter is an independent project, not affiliated with or endorsed by Anthropic. "Claude" is a trademark of Anthropic PBC.
 
 **Keywords** (≤100 chars):
-`claude,ai,usage,tokens,menu bar,developer,anthropic,claude code,cost,tracker,llm,monitor`
+`claude,ai,usage,tokens,menu bar,developer,claude code,cost,tracker,llm,monitor,limits`
+
+> ⚠️ Never put **`anthropic`** (or any other company's trademark) in the keywords —
+> using another company's trademark as a keyword is a standard App Review rejection
+> (and was dropped from the live listing for exactly this reason). "Claude" stays
+> only as the descriptive subject term.
 
 **Support URL:** https://github.com/OmerYasirOnal/UsageMeter/issues
 **Marketing URL:** https://github.com/OmerYasirOnal/UsageMeter

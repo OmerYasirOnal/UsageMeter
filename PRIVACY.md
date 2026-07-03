@@ -52,3 +52,9 @@ Collected."**
 
 Material changes will be posted to this page. Questions or concerns:
 [github.com/OmerYasirOnal/UsageMeter/issues](https://github.com/OmerYasirOnal/UsageMeter/issues).
+
+---
+
+*UsageMeter is an independent project, not affiliated with, endorsed by, or
+sponsored by Anthropic. "Claude" is a trademark of Anthropic PBC, used here only
+to describe what the app tracks.*
