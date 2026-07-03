@@ -333,7 +333,7 @@ struct AccountLoginScreen: View {
                     guard !Task.isCancelled else { return }
                     dismissWindow(id: AppWindowID.accountLogin)
                 }
-            case .signingIn, .fetchTimeout:
+            case .signingIn, .fetchTimeout, .enterEmail, .autofilling:
                 break
             }
         }
@@ -343,7 +343,7 @@ struct AccountLoginScreen: View {
     private var showsCurtain: Bool {
         switch controller.flow.phase {
         case .fetching, .captured: return true
-        case .signingIn, .fetchTimeout: return false
+        case .signingIn, .fetchTimeout, .enterEmail, .autofilling: return false
         }
     }
 
