@@ -4,7 +4,22 @@ _Last updated: 2026-07-03. Read this first when resuming in a new session._
 
 ## ⭐ Resume point (where we left off)
 
-**UsageMeter is v1.0.0 everywhere (2026-07-03).**
+**GitHub + Homebrew are at v1.1.0 (email-first login); the App Store is still v1.0.0 (2026-07-03).**
+- **v1.1.0 — email-first login (2026-07-03).** New native "Sign in with Email"
+  step drives claude.ai's magic-code login: prefills + submits the email form,
+  reveals the WebView only at the code screen, degrades to the raw page if the
+  form can't be prefilled (8s Swift-side timeout), logout wipes the remembered
+  email, mock mode skips the step. All `#if !APPSTORE` (Source A), so this does
+  **not** ship to the App Store variant. Built via brainstorm→spec→plan→
+  subagent-driven-development (specs/plans under `docs/superpowers/`). 200 tests.
+  Notarized GitHub release live
+  (https://github.com/OmerYasirOnal/UsageMeter/releases/tag/v1.1.0), tag pushed,
+  Homebrew cask (`OmerYasirOnal/homebrew-tap`) bumped to 1.1.0 (sha256
+  `f54fde24…`), /Applications updated. VERSION file + project.yml at 1.1.0/8.
+  ⚠️ The tap's 1.0.0 bump had never been pushed (local was 0.2.3, remote 1.0.0) —
+  reconciled during this release; the cask now points at 1.1.0.
+
+**Prior milestone — UsageMeter v1.0.0 (2026-07-03):**
 - **Mac App Store:** 1.0.0 (build 7, local-only `APPSTORE` variant) is
   `WAITING_FOR_REVIEW`, submitted 2026-07-03. The old 0.2.0 submission was pulled
   (queue reset accepted, per Yasir), the same version record was renamed to 1.0.0,
