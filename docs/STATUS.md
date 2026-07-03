@@ -1,25 +1,27 @@
 # Project Status & Handoff — UsageMeter
 
-_Last updated: 2026-07-01. Read this first when resuming in a new session._
+_Last updated: 2026-07-03. Read this first when resuming in a new session._
 
 ## ⭐ Resume point (where we left off)
 
-**UsageMeter 0.2.0 (build 3) is SUBMITTED to the Mac App Store — state
-`WAITING_FOR_REVIEW`, submitted 2026-07-01 14:32 UTC.** We shipped the **local-only
-variant (Option A)**: the App Store build defines `APPSTORE`, which compiles out the
-claude.ai account (Source A) + WebKit (verified stripped via `otool -L`). A
-pre-submission multi-agent audit caught that the **full** account build (built +
-uploaded earlier as build 2) would almost certainly be rejected — Guideline **5.2.2**
-(automating the unofficial claude.ai endpoint, self-disclosed in the binary strings) +
-**2.3.1** (metadata/privacy label describe the local-only app, not the account binary).
-So we pivoted to local-only and **expired build 2** so it can't be submitted.
+**UsageMeter is v1.0.0 everywhere (2026-07-03).**
+- **Mac App Store:** 1.0.0 (build 7, local-only `APPSTORE` variant) is
+  `WAITING_FOR_REVIEW`, submitted 2026-07-03. The old 0.2.0 submission was pulled
+  (queue reset accepted, per Yasir), the same version record was renamed to 1.0.0,
+  build 7 attached, and the two listing screenshots were replaced with fresh
+  **local-only Kiln** shots (dashboard + popover, captured from the archived store
+  build with `USAGEMETER_DEMO=1`, composed to 2880×1800 via `caption.swift`).
+  Auto-release after approval. Build/submit flow was fully headless
+  (`build_v1.sh` + `asc.py`/`submit.py`/`upload_shot.py` in the session scratchpad;
+  ASC key `93HFBMV3MA` at `~/.appstoreconnect/`).
+- **GitHub:** notarized full-variant release **v1.0.0** is live
+  (https://github.com/OmerYasirOnal/UsageMeter/releases/tag/v1.0.0), tag pushed,
+  **Homebrew cask** bumped to 1.0.0 (sha256 updated). /Applications updated too.
 
-> **Next:** wait for Apple's review result (~24–48 h; email to the account-holder
-> contact). Release is set to **auto-release after approval**. If rejected, the audit's
-> SHOULD-FIX list is the playbook (affiliation disclaimer already added). Loose ends:
-> branch **`appstore-local-only`** is pushed with a PR open into `main`; optional
-> per-submission contact info was left blank (needs a phone) so Apple defaults to the
-> account contact.
+> **Next:** wait for Apple's verdict (~24–48 h; email to the account holder). If
+> rejected, fix per the notes and resubmit the same 1.0.0 record. Screenshot note:
+> store shots must stay **local-only** (account-feature imagery would re-trigger the
+> 2.3.1 metadata-mismatch risk that killed the original full build).
 
 ### What was done for this submission (2026-07-01)
 - **Local-only build 3** — `SWIFT_ACTIVE_COMPILATION_CONDITIONS: APPSTORE`,
