@@ -74,13 +74,36 @@ Requires **macOS 15 (Sequoia) or later**. Prefer to build it yourself? See
   (tokens, API value, 7-day Δ). No server, no accounts — nothing is transmitted.
 - 🔔 **Smart notifications** — at 50 % / 75 % / 90 %, a smoothed burn-rate alert
   ("on track to hit your limit before it resets"), and a daily API-value budget.
-- ✨ **Frictionless login** — sign in on claude.ai's real page; a native curtain
-  fetches your numbers and closes the window in under a second. The session
-  self-renews, so you stay logged in.
+- ✨ **Email-first login** — type your claude.ai email once; UsageMeter prefills and
+  submits the sign-in form for you and shows the page only at the verification-code
+  step, so you just paste the code. A native curtain fetches your numbers and closes
+  the window in under a second, and the session self-renews so you stay logged in.
+  (Google / SSO users can pick the full claude.ai sign-in page.)
 - 🌗 **Appearance** — System / Light / Dark applied everywhere (popover included),
   launch-at-login, tabbed Settings, and a built-in update check for this download.
 - 🔒 **Local-first & private** — three decoupled sources; the app stays fully useful
   even when you never log in (Claude Code + status still work).
+
+## How it compares
+
+`ccusage` and Claude Code's built-in `/usage` are both great — they solve
+different halves of the problem. UsageMeter is the only one that lives in your
+menu bar and shows *both* your local Claude Code cost **and** your real account
+session / weekly limits, with history and forecasts.
+
+| | **UsageMeter** | `ccusage` | `/usage` (built-in) |
+|---|:---:|:---:|:---:|
+| Always-visible native macOS menu bar | ✅ | ❌ (CLI) | ❌ (in-terminal) |
+| Real account **session / weekly %** | ✅ | ❌ | ✅ |
+| Claude Code **tokens & cost** (local logs) | ✅ | ✅ | ❌ |
+| Usage **history, charts, heatmap** | ✅ | daily/monthly tables | ❌ |
+| **Burn-rate forecasts** & notifications | ✅ | ❌ | ❌ |
+| No Node / nothing to install | ✅ native app | ❌ needs Node | ✅ |
+| Never reads message content | ✅ | ✅ | ✅ |
+| Open source | ✅ MIT | ✅ | built-in |
+| Price | Free | Free | Free |
+
+Think of it as **"ccusage, but native — plus your actual account limits."**
 
 ## Requirements
 
@@ -145,6 +168,47 @@ On a flat subscription, the dollar figure for Claude Code tokens isn't money you
 spent — it's what those tokens **would** cost on the pay-as-you-go API ("API value"
 = the value you get from your subscription). You can hide it in Settings. Your
 **actual** spend is read from claude.ai and shown separately as "Pay-as-you-go used".
+
+## FAQ
+
+**How do I see my Claude weekly limit?**
+Log in with your claude.ai email (Settings ▸ or the popover's Sign in). UsageMeter
+then shows your **session %**, **weekly %**, weekly **Opus %**, and the exact reset
+times — the same numbers as `claude.ai/settings/usage`, right in your menu bar.
+
+**How do I check my Claude Code token usage and cost?**
+That works with **no login and no network** — UsageMeter reads your local Claude
+Code logs (`~/.claude`) and shows today's tokens, an estimated API-rate value, and
+per-model / per-project breakdowns.
+
+**Does UsageMeter read my conversations?**
+No. It reads only token counts, model names, and timestamps — never message or
+conversation content. That's a hard rule enforced in the parser and the on-disk
+cache, and it's why the App Store privacy label is "Data Not Collected."
+
+**Do I have to log in?**
+Only if you want the account **session / weekly %**. Claude Code cost and the
+service-status badge work fully offline without any account.
+
+**Is my claude.ai login safe? What's stored?**
+UsageMeter never sees your password — you sign in on claude.ai's own page. Only
+your login **session cookie** is stored locally (in an isolated store), and
+**Log out wipes it**. Nothing is sent anywhere.
+
+**Is this official / affiliated with Anthropic?**
+No. UsageMeter is an independent open-source project, not affiliated with or
+endorsed by Anthropic. The account numbers come from claude.ai's own (unofficial,
+undocumented) usage endpoint — see the Terms-of-Service note above.
+
+**What's "API value" vs real spend?**
+On a flat subscription, the dollar figure for Claude Code tokens isn't money you
+spent — it's what those tokens *would* cost on the pay-as-you-go API. Your real
+pay-as-you-go spend is read separately from claude.ai. See the section above.
+
+**Isn't this just ccusage?**
+ccusage is a great Node CLI for local Claude Code token/cost. UsageMeter is a
+native menu-bar app that adds your **real account limits**, history, forecasts, and
+notifications — with no Node to install. See [How it compares](#how-it-compares).
 
 ## Architecture
 
