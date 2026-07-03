@@ -47,10 +47,19 @@ public struct LoginFlowModel: Equatable, Sendable {
         phase = .signingIn
     }
 
-    /// The injected script saw claude.ai's verification-code screen.
+    /// The injected script saw claude.ai's verification-code screen. Reveals
+    /// the WebView; if the screen only appeared after the autofill timeout
+    /// already fired, also clears the now-wrong "couldn't prefill" banner —
+    /// the prefill actually succeeded, it was just slow.
     public mutating func codeScreenDetected() {
-        guard case .autofilling = phase else { return }
-        phase = .signingIn
+        switch phase {
+        case .autofilling:
+            phase = .signingIn
+        case .signingIn where autofillFailed:
+            autofillFailed = false
+        default:
+            break
+        }
     }
 
     /// The WebView finished loading a logged-in claude.ai page. Also fires

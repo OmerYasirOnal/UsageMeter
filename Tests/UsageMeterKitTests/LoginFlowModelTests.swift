@@ -63,6 +63,27 @@ struct LoginFlowModelTests {
         #expect(m.phase == .signingIn)
     }
 
+    @Test func lateCodeScreenClearsAutofillFailedBanner() {
+        // Code screen arrives AFTER the 8s autofill timeout already fired: the
+        // prefill actually worked (just slow), so the misleading banner clears.
+        var m = LoginFlowModel()
+        m.emailSubmitted(now: t0)
+        m.tick(now: t0.addingTimeInterval(8)) // times out → .signingIn, autofillFailed = true
+        #expect(m.autofillFailed == true)
+        m.codeScreenDetected()
+        #expect(m.phase == .signingIn)
+        #expect(m.autofillFailed == false)
+    }
+
+    @Test func codeScreenInPlainSigningInIsNoOp() {
+        // Full-page fallback signingIn (autofillFailed == false): a stray
+        // code-screen message must not change anything.
+        var m = atSigningIn()
+        m.codeScreenDetected()
+        #expect(m.phase == .signingIn)
+        #expect(m.autofillFailed == false)
+    }
+
     @Test func autofillTimesOutWithFailureFlag() {
         var m = LoginFlowModel()
         m.emailSubmitted(now: t0)

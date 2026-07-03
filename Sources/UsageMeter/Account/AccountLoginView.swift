@@ -81,7 +81,6 @@ struct AccountLoginView: NSViewRepresentable {
         private let auth: AccountAuth
         private let controller: LoginWebController
         private var requestedUsage = false
-        private var autofillInjected = false
         private var popupWindow: NSWindow?
         private var popupWebView: WKWebView?
 
@@ -125,9 +124,20 @@ struct AccountLoginView: NSViewRepresentable {
                 requestedUsage = false   // back in the login flow → re-arm
                 MainActor.assumeIsolated {
                     controller.flow.backOnLoginPage() // no-op during autofill (expected page)
-                    if case .autofilling = controller.flow.phase,
-                       let email = controller.pendingEmail, !autofillInjected {
-                        autofillInjected = true
+                    // Re-inject on every login-path load so code-screen detection
+                    // survives a FULL navigation between the email and code steps,
+                    // not just an in-place SPA re-render. The script fills+submits
+                    // only where the email field exists (a no-op on the code page)
+                    // and its own `submitted` guard prevents a double submit; the
+                    // `.signingIn`-with-`autofillFailed` case re-arms detection when
+                    // the code page arrives after the autofill timeout already fired.
+                    let wantsAutofill: Bool
+                    switch controller.flow.phase {
+                    case .autofilling: wantsAutofill = true
+                    case .signingIn: wantsAutofill = controller.flow.autofillFailed
+                    default: wantsAutofill = false
+                    }
+                    if wantsAutofill, let email = controller.pendingEmail {
                         webView.evaluateJavaScript(AccountLoginView.autofillScript(email: email))
                     }
                 }
