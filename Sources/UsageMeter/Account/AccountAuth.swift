@@ -205,6 +205,7 @@ final class AccountAuth: ObservableObject, AccountSessionProviding, AccountEndpo
         Self.log.notice("logout: user-initiated wipe")
         await removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes())
         endpointStore.clear()
+        UserDefaults.standard.removeObject(forKey: "accountLoginEmail") // "Log out wipes it"
         try? FileManager.default.removeItem(at: captureFileURL)
         try? FileManager.default.removeItem(at: discoveryFileURL)
         endpointInfo = nil

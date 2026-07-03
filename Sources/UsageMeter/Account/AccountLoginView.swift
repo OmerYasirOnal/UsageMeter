@@ -10,7 +10,17 @@ final class LoginWebController: ObservableObject {
     /// First page finished loading — used to hide the loading overlay.
     @Published var hasLoadedOnce = false
     /// Curtain phase machine — fed by the Coordinator, rendered by the screen.
-    @Published var flow = LoginFlowModel()
+    @Published var flow: LoginFlowModel
+    /// Email captured on the native step screen, autofilled into claude.ai's
+    /// login form by the Coordinator. First-party only — never sent elsewhere.
+    var pendingEmail: String?
+
+    init() {
+        // Mock mode loads a local fixture page — the email step makes no sense there.
+        let mock = ProcessInfo.processInfo.environment["USAGEMETER_MOCK_USAGE_URL"] != nil
+        flow = LoginFlowModel(skipEmailStep: mock)
+    }
+
     func reload() { webView?.reload() }
     func goToUsage() { webView?.load(URLRequest(url: AccountLoginView.usagePageURL)) }
 }
@@ -32,6 +42,7 @@ struct AccountLoginView: NSViewRepresentable {
 
         let userContent = WKUserContentController()
         userContent.add(context.coordinator, name: Self.messageName)
+        userContent.add(context.coordinator, name: Self.loginFlowMessageName)
         userContent.addUserScript(WKUserScript(
             source: Self.captureScript, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         config.userContentController = userContent
@@ -43,8 +54,15 @@ struct AccountLoginView: NSViewRepresentable {
         webView.customUserAgent = Self.safariUserAgent
         controller.webView = webView
 
-        let start = ProcessInfo.processInfo.environment["USAGEMETER_MOCK_USAGE_URL"]
-            .flatMap { URL(string: $0) } ?? Self.usagePageURL
+        let start: URL
+        if let mock = ProcessInfo.processInfo.environment["USAGEMETER_MOCK_USAGE_URL"]
+            .flatMap({ URL(string: $0) }) {
+            start = mock
+        } else if controller.pendingEmail != nil {
+            start = Self.loginPageURL      // email flow: land on the form we autofill
+        } else {
+            start = Self.usagePageURL      // full-page fallback: today's behavior
+        }
         webView.load(URLRequest(url: start))
         return webView
     }
@@ -53,6 +71,7 @@ struct AccountLoginView: NSViewRepresentable {
 
     static func dismantleNSView(_ nsView: WKWebView, coordinator: Coordinator) {
         nsView.configuration.userContentController.removeScriptMessageHandler(forName: messageName)
+        nsView.configuration.userContentController.removeScriptMessageHandler(forName: loginFlowMessageName)
         nsView.configuration.userContentController.removeAllUserScripts()
     }
 
@@ -72,6 +91,13 @@ struct AccountLoginView: NSViewRepresentable {
 
         func userContentController(_ controller: WKUserContentController,
                                    didReceive message: WKScriptMessage) {
+            if message.name == AccountLoginView.loginFlowMessageName {
+                guard let dict = message.body as? [String: Any],
+                      dict["event"] as? String == "codeScreen" else { return }
+                let flowController = self.controller
+                Task { @MainActor in flowController.flow.codeScreenDetected() }
+                return
+            }
             guard message.name == AccountLoginView.messageName,
                   let dict = message.body as? [String: Any],
                   let url = dict["url"] as? String, !url.isEmpty else { return }
@@ -96,7 +122,25 @@ struct AccountLoginView: NSViewRepresentable {
             let path = url.path.lowercased()
             if path.contains("login") || path.contains("auth") || path.contains("oauth") || path.contains("magic") {
                 requestedUsage = false   // back in the login flow → re-arm
-                MainActor.assumeIsolated { controller.flow.backOnLoginPage() }
+                MainActor.assumeIsolated {
+                    controller.flow.backOnLoginPage() // no-op during autofill (expected page)
+                    // Re-inject on every login-path load so code-screen detection
+                    // survives a FULL navigation between the email and code steps,
+                    // not just an in-place SPA re-render. The script fills+submits
+                    // only where the email field exists (a no-op on the code page)
+                    // and its own `submitted` guard prevents a double submit; the
+                    // `.signingIn`-with-`autofillFailed` case re-arms detection when
+                    // the code page arrives after the autofill timeout already fired.
+                    let wantsAutofill: Bool
+                    switch controller.flow.phase {
+                    case .autofilling: wantsAutofill = true
+                    case .signingIn: wantsAutofill = controller.flow.autofillFailed
+                    default: wantsAutofill = false
+                    }
+                    if wantsAutofill, let email = controller.pendingEmail {
+                        webView.evaluateJavaScript(AccountLoginView.autofillScript(email: email))
+                    }
+                }
                 return
             }
             // Logged in — drop the curtain BEFORE any usage content can render.
@@ -160,7 +204,9 @@ struct AccountLoginView: NSViewRepresentable {
     // MARK: - Constants
 
     static let messageName = "usageProbe"
+    static let loginFlowMessageName = "loginFlow"
     static let usagePageURL = URL(string: "https://claude.ai/settings/usage")!
+    static let loginPageURL = URL(string: "https://claude.ai/login")!
     static let safariUserAgent =
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"
 
@@ -236,14 +282,77 @@ struct AccountLoginView: NSViewRepresentable {
       } catch (e) {}
     })();
     """#
+
+    /// Fills claude.ai's email login form (React controlled input → native
+    /// value setter + `input` event), submits it once, and reports when the
+    /// verification-code screen appears. The email string is JSON-encoded so
+    /// arbitrary user input cannot escape the script.
+    static func autofillScript(email: String) -> String {
+        let encoded = (try? JSONEncoder().encode([email]))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? #"[""]"#
+        return """
+        (function () {
+          var email = \(encoded)[0];
+          var submitted = false;
+          var reportedCode = false;
+          function fill() {
+            if (submitted) return;
+            var input = document.querySelector('input#email, input[data-testid="email"], input[type="email"]');
+            if (!input) return;
+            try {
+              var setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+              setter.call(input, email);
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              var form = input.closest('form');
+              if (form && form.requestSubmit) { form.requestSubmit(); }
+              else {
+                var btn = (form || document).querySelector('button[type=submit]');
+                if (!btn) return;
+                btn.click();
+              }
+              submitted = true;
+            } catch (e) {}
+          }
+          function isCodeInput(el) {
+            var s = ((el.getAttribute('placeholder') || '') + ' ' +
+                     (el.getAttribute('data-testid') || '') + ' ' +
+                     (el.getAttribute('autocomplete') || '') + ' ' +
+                     (el.id || '')).toLowerCase();
+            return s.indexOf('code') > -1 || s.indexOf('one-time') > -1;
+          }
+          function codeScreenVisible() {
+            var inputs = document.querySelectorAll('input');
+            for (var i = 0; i < inputs.length; i++) { if (isCodeInput(inputs[i])) return true; }
+            return false;
+          }
+          function check() {
+            fill();
+            if (!reportedCode && codeScreenVisible()) {
+              reportedCode = true;
+              try {
+                window.webkit.messageHandlers.loginFlow.postMessage({ kind: 'loginFlow', event: 'codeScreen' });
+              } catch (e) {}
+            }
+            if (submitted && reportedCode) { stop(); }
+          }
+          var timer = setInterval(check, 400);
+          var observer = new MutationObserver(check);
+          function stop() { clearInterval(timer); observer.disconnect(); }
+          observer.observe(document.documentElement, { childList: true, subtree: true });
+          setTimeout(stop, 20000);
+          check();
+        })();
+        """
+    }
 }
 
-/// Window content hosting the login WebView with a toolbar.
+/// Window content hosting the email step and the login WebView with a toolbar.
 struct AccountLoginScreen: View {
     @ObservedObject var auth: AccountAuth
     @StateObject private var controller = LoginWebController()
     @Environment(\.dismissWindow) private var dismissWindow
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage("accountLoginEmail") private var email = ""
     @State private var closeTask: Task<Void, Never>?
     @State private var timeoutTask: Task<Void, Never>?
 
@@ -251,35 +360,49 @@ struct AccountLoginScreen: View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Image(systemName: "person.crop.circle").foregroundStyle(Theme.accent)
-                Text("Sign in to claude.ai").font(.headline)
+                Text(isEmailStep ? "Sign in with Email" : "Sign in to claude.ai").font(.headline)
                 Spacer()
-                Button { controller.reload() } label: { Image(systemName: "arrow.clockwise") }
-                    .help("Reload")
+                if !isEmailStep {
+                    Button { controller.reload() } label: { Image(systemName: "arrow.clockwise") }
+                        .help("Reload")
+                }
                 Button("Done") { dismissWindow(id: AppWindowID.accountLogin) }
-                    .keyboardShortcut(.defaultAction)
-                    .buttonStyle(.borderedProminent)
-                    .tint(Theme.accent)
+                    .buttonStyle(.bordered)
             }
             .padding(10)
 
             Divider()
 
             ZStack {
-                AccountLoginView(auth: auth, controller: controller)
-                if !controller.hasLoadedOnce {
-                    VStack(spacing: 12) {
-                        ProgressView().controlSize(.large)
-                        Text("Loading claude.ai…").font(.callout).foregroundStyle(.secondary)
+                if isEmailStep {
+                    emailStep
+                } else {
+                    AccountLoginView(auth: auth, controller: controller)
+                    if !controller.hasLoadedOnce {
+                        VStack(spacing: 12) {
+                            ProgressView().controlSize(.large)
+                            Text("Loading claude.ai…").font(.callout).foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(.background)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(.background)
-                }
-                if showsCurtain {
-                    curtain
-                        .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 1.02)))
+                    if showsCurtain {
+                        curtain
+                            .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 1.02)))
+                    }
                 }
             }
             .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: showsCurtain)
+
+            if controller.flow.autofillFailed, case .signingIn = controller.flow.phase {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Theme.warning)
+                    Text("Couldn't prefill your email — enter it on the page.").font(.callout)
+                    Spacer()
+                }
+                .padding(10)
+                .background(.quaternary.opacity(0.5))
+            }
 
             if case .fetchTimeout = controller.flow.phase {
                 HStack(spacing: 8) {
@@ -298,9 +421,11 @@ struct AccountLoginScreen: View {
 
             Divider()
             VStack(alignment: .leading, spacing: 4) {
-                Label("If \u{201C}Continue with Google\u{201D} errors, try \u{201C}Continue with email\u{201D}.",
-                      systemImage: "lightbulb")
-                    .font(.caption2).foregroundStyle(Theme.accent)
+                if !isEmailStep {
+                    Label("If \u{201C}Continue with Google\u{201D} errors, try \u{201C}Continue with email\u{201D}.",
+                          systemImage: "lightbulb")
+                        .font(.caption2).foregroundStyle(Theme.accent)
+                }
                 Text("UsageMeter never sees your password — only your claude.ai login session is stored locally, and Log out wipes it. It reads only usage percentages and reset times, never conversation content. This window closes by itself once your numbers are captured.")
                     .font(.caption2).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -319,13 +444,10 @@ struct AccountLoginScreen: View {
         .onChange(of: controller.flow.phase) { _, phase in
             timeoutTask?.cancel()
             switch phase {
+            case .autofilling(let since):
+                scheduleTick(at: since.addingTimeInterval(LoginFlowModel.autofillTimeout))
             case .fetching(let since):
-                timeoutTask = Task { @MainActor in
-                    let deadline = since.addingTimeInterval(LoginFlowModel.fetchTimeout)
-                    try? await Task.sleep(nanoseconds: UInt64(max(0, deadline.timeIntervalSinceNow) * 1_000_000_000))
-                    guard !Task.isCancelled else { return }
-                    controller.flow.tick(now: Date())
-                }
+                scheduleTick(at: since.addingTimeInterval(LoginFlowModel.fetchTimeout))
             case .captured:
                 closeTask?.cancel()
                 closeTask = Task { @MainActor in
@@ -333,30 +455,124 @@ struct AccountLoginScreen: View {
                     guard !Task.isCancelled else { return }
                     dismissWindow(id: AppWindowID.accountLogin)
                 }
-            case .signingIn, .fetchTimeout:
+            case .enterEmail, .signingIn, .fetchTimeout:
                 break
             }
         }
         .onDisappear { closeTask?.cancel(); timeoutTask?.cancel() }
     }
 
-    private var showsCurtain: Bool {
-        switch controller.flow.phase {
-        case .fetching, .captured: return true
-        case .signingIn, .fetchTimeout: return false
+    private var isEmailStep: Bool { controller.flow.phase == .enterEmail }
+
+    private func scheduleTick(at deadline: Date) {
+        timeoutTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: UInt64(max(0, deadline.timeIntervalSinceNow) * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            controller.flow.tick(now: Date())
         }
     }
 
-    /// Native cover shown from "logged in" until the window closes — the
-    /// claude.ai usage page renders invisibly behind it.
+    // MARK: - Email step (native, no WebView yet)
+
+    private var emailLooksValid: Bool {
+        let trimmed = email.trimmingCharacters(in: .whitespaces)
+        return trimmed.contains("@") && trimmed.contains(".") && trimmed.count >= 6
+    }
+
+    private func submitEmail() {
+        guard emailLooksValid else { return }
+        controller.pendingEmail = email.trimmingCharacters(in: .whitespaces)
+        controller.flow.emailSubmitted(now: Date())
+    }
+
+    private var emailStep: some View {
+        VStack(spacing: 16) {
+            Spacer(minLength: 12)
+            Text("Enter your email and follow these steps to verify.")
+                .font(.callout).foregroundStyle(.secondary)
+
+            VStack(alignment: .leading, spacing: 0) {
+                stepRow(number: "1", title: "Enter your Claude email",
+                        detail: "Use the email you log in to claude.ai with.")
+                Divider().padding(.vertical, 12)
+                stepRow(number: "2", title: "Check your inbox",
+                        detail: "Claude sends you a sign-in code.")
+                Divider().padding(.vertical, 12)
+                stepRow(number: "3", title: "Enter the code",
+                        detail: "Type it on the claude.ai screen that appears here.")
+            }
+            .padding(20)
+            .background(RoundedRectangle(cornerRadius: 12).fill(.quaternary.opacity(0.35)))
+            .frame(maxWidth: 460)
+
+            Spacer(minLength: 12)
+
+            HStack(spacing: 10) {
+                TextField("Enter your claude.ai email…", text: $email)
+                    .textFieldStyle(.roundedBorder)
+                    .textContentType(.username)
+                    .onSubmit(submitEmail)
+                Button {
+                    submitEmail()
+                } label: {
+                    Label("Sign in to Claude", systemImage: "envelope.fill")
+                }
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+                .tint(Theme.accent)
+                .disabled(!emailLooksValid)
+            }
+            .frame(maxWidth: 460)
+
+            Button("Google or SSO account? Use the full claude.ai sign-in page.") {
+                controller.flow.fullPageRequested()
+            }
+            .buttonStyle(.link)
+            .font(.caption)
+            .padding(.bottom, 16)
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.background)
+    }
+
+    private func stepRow(number: String, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(number)
+                .font(.callout.weight(.bold)).monospacedDigit()
+                .frame(width: 26, height: 26)
+                .background(Circle().fill(Theme.accent.opacity(0.85)))
+                .foregroundStyle(.white)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.callout.weight(.semibold))
+                Text(detail).font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var showsCurtain: Bool {
+        switch controller.flow.phase {
+        case .autofilling, .fetching, .captured: return true
+        case .enterEmail, .signingIn, .fetchTimeout: return false
+        }
+    }
+
+    /// Native cover: shown while the injected script submits the email form
+    /// ("sending code"), and again from "logged in" until the window closes —
+    /// the claude.ai page renders invisibly behind it.
     private var curtain: some View {
         VStack(spacing: 14) {
-            if case .captured = controller.flow.phase {
+            switch controller.flow.phase {
+            case .captured:
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 44)).foregroundStyle(Theme.ok)
                 Text("You're all set").font(.title3.weight(.semibold))
                 Text("Usage captured — closing…").font(.callout).foregroundStyle(.secondary)
-            } else {
+            case .autofilling:
+                ProgressView().controlSize(.large)
+                Text("Sending you a sign-in code…").font(.title3.weight(.semibold))
+                Text("Submitting your email to claude.ai.").font(.callout).foregroundStyle(.secondary)
+            default:
                 ProgressView().controlSize(.large)
                 Text("Signed in").font(.title3.weight(.semibold))
                 Text("Fetching your usage…").font(.callout).foregroundStyle(.secondary)
