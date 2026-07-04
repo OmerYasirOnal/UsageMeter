@@ -1,8 +1,35 @@
 # Project Status & Handoff — UsageMeter
 
-_Last updated: 2026-07-03. Read this first when resuming in a new session._
+_Last updated: 2026-07-04. Read this first when resuming in a new session._
 
 ## ⭐ Resume point (where we left off)
+
+### ⛳️ Top open item — needs Yasir's decision: Source A ToS
+The 2026-07-03 ToS review (`docs/TOS_REVIEW.md`) found that Anthropic's **Consumer
+Terms §3 (eff. 2025-10-08)** prohibit automated/script access to claude.ai except
+via an API key — which **directly describes what Source A does** (headless
+usage-endpoint replay with the user's cookies). This is a real decision, not a
+formality. Four options in the doc: (1) keep + explicit consent gate, (2) gate
+behind an off-by-default "experimental" switch, (3) **pivot to the official OAuth
+usage endpoint Claude Code itself uses** (ROADMAP #12 — the durable fix, creds
+already in `~/.claude`), (4) drop Source A from distributed builds. **A login
+consent sheet was intentionally NOT built yet — it's only option 1, and the choice
+is pending.** Note: the **App Store variant excludes Source A** (`#if !APPSTORE`),
+so this does not touch the MAS submission.
+
+### Post-v1.1.0 hardening (2026-07-03, all shipped)
+- **CI** — `.github/workflows/ci.yml` runs `swift test` + full build + APPSTORE-variant
+  build on every push/PR (macos-15, green in ~40s). Closes ROADMAP #2.
+- **Trademark/brand sweep** (ROADMAP #3) — "not affiliated with Anthropic / Claude is
+  a trademark" disclaimer added to `PRIVACY.md` + the **live** GitHub Pages privacy
+  page; `anthropic` removed from the App Store keyword doc.
+- **Resubmit-ready App Review assets** — `docs/APP_STORE_REVIEW_NOTES.md`: paste-ready
+  Notes-for-Reviewer (no-account explanation, Show-sample-data steps that pre-empt the
+  2.1 empty-state rejection), a ~25s PII-free demo recording script, and a pre-resubmit
+  checklist. **Demo video still needs to be recorded by Yasir** (no display in-agent).
+- **Launch prep** (ROADMAP #5) — README "How it compares" table (vs ccusage vs `/usage`)
+  + FAQ; login section updated to the email-first flow.
+- ROADMAP #1 (rescue ASC scripts) was already done: `Scripts/release/` is git-tracked.
 
 **GitHub + Homebrew are at v1.1.0 (email-first login); the App Store is still v1.0.0 (2026-07-03).**
 - **v1.1.0 — email-first login (2026-07-03).** New native "Sign in with Email"
