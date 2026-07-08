@@ -267,14 +267,18 @@ make xcodeproj  # generate the Xcode app target (needs XcodeGen)
   path is the sandboxed App Store target.** Two build paths on purpose.
 - **App icon is code-generated** — regenerate/tweak via `make icon` (edit
   `Scripts/icon/render.swift`; the `gaugefill` case is the shipping concept).
-- **Menu-bar glyph = SF Symbol `gauge.with.dots.needle.50percent`.** ⚠️ We tried a
-  custom `Canvas` mark (`GaugeGlyph`) but **`Canvas` does not render in a MenuBarExtra
-  label** (AppKit snapshots the label to a *template image*; Canvas draws blank and
-  breaks the layout so the % after it vanishes too). Reverted to the SF Symbol gauge
-  (same family as the icon, templates + tints reliably, supports the live-% overlay).
-  The custom gauge lives where it renders correctly: the **app icon** (CG-rendered
-  `.icns`). If a custom menu-bar mark is ever wanted, pre-render it to a template
-  PDF/PNG (`Image(...).renderingMode(.template)`), not a live `Canvas`.
+- **Menu-bar glyph = SF Symbol `gauge.with.dots.needle.{0,33,50,67,100}percent`,
+  picked by the live session %** (`MenuBarLabel.gaugeSymbolName`, 2026-07-08) —
+  the glyph's filled arc now actually narrows/widens with usage instead of being
+  frozen at 50%, with a `.contentTransition(.symbolEffect(.replace))` morph on
+  change. ⚠️ We tried a custom `Canvas` mark (`GaugeGlyph`) but **`Canvas` does
+  not render in a MenuBarExtra label** (AppKit snapshots the label to a
+  *template image*; Canvas draws blank and breaks the layout so the % after it
+  vanishes too) — that's still why this is a discrete SF Symbol swap and not a
+  live custom fill shape. The custom gauge lives where it renders correctly:
+  the **app icon** (CG-rendered `.icns`). If a custom menu-bar mark is ever
+  wanted, pre-render it to a template PDF/PNG (`Image(...).renderingMode(.template)`),
+  not a live `Canvas`.
 - Login auto-close triggers on `auth.lastCaptured` (real usage capture), never while
   typing credentials.
 
