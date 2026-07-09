@@ -1,15 +1,19 @@
 import Foundation
 
 /// Pure phase reducer for the claude.ai login window:
-/// `enterEmail` shows the native email step (no WebView yet); `autofilling`
-/// hides the WebView behind a "sending code" cover while an injected script
-/// fills + submits claude.ai's email form; `signingIn` shows the WebView
-/// (normally at the code-entry screen); `fetching` hides it behind a native
-/// overlay while the hidden hop to the Usage page fires the capture;
-/// `captured` is terminal (window closes); `fetchTimeout` lifts the curtain
-/// so the user is never trapped behind a spinner.
+/// `consent` (optional, first-ever login only) discloses that this feature
+/// automates access to claude.ai outside Anthropic's stated Terms, before
+/// anything else happens; `enterEmail` shows the native email step (no
+/// WebView yet); `autofilling` hides the WebView behind a "sending code"
+/// cover while an injected script fills + submits claude.ai's email form;
+/// `signingIn` shows the WebView (normally at the code-entry screen);
+/// `fetching` hides it behind a native overlay while the hidden hop to the
+/// Usage page fires the capture; `captured` is terminal (window closes);
+/// `fetchTimeout` lifts the curtain so the user is never trapped behind a
+/// spinner.
 public struct LoginFlowModel: Equatable, Sendable {
     public enum Phase: Equatable, Sendable {
+        case consent
         case enterEmail
         case autofilling(since: Date)
         case signingIn
@@ -31,8 +35,25 @@ public struct LoginFlowModel: Equatable, Sendable {
 
     /// `skipEmailStep` starts directly at `.signingIn` (mock mode and the
     /// "use the full sign-in page" fallback keep today's behavior).
-    public init(skipEmailStep: Bool = false) {
-        phase = skipEmailStep ? .signingIn : .enterEmail
+    /// `showConsentGate` starts at `.consent` instead of `.enterEmail` —
+    /// defaults to `false` so every existing bare `LoginFlowModel()` call
+    /// (throughout this file's own tests) keeps starting at `.enterEmail`
+    /// unchanged; only a real login attempt with consent not yet granted
+    /// passes `true` (see `LoginWebController.init()`).
+    public init(skipEmailStep: Bool = false, showConsentGate: Bool = false) {
+        if skipEmailStep {
+            phase = .signingIn
+        } else if showConsentGate {
+            phase = .consent
+        } else {
+            phase = .enterEmail
+        }
+    }
+
+    /// The user accepted the automated-access disclosure on the consent screen.
+    public mutating func consentAccepted() {
+        guard phase == .consent else { return }
+        phase = .enterEmail
     }
 
     /// The user submitted their email on the native step screen.
@@ -70,7 +91,7 @@ public struct LoginFlowModel: Equatable, Sendable {
         case .signingIn, .fetchTimeout, .autofilling:
             autofillFailed = false
             phase = .fetching(since: now)
-        case .enterEmail, .fetching, .captured:
+        case .consent, .enterEmail, .fetching, .captured:
             return
         }
     }
@@ -80,7 +101,7 @@ public struct LoginFlowModel: Equatable, Sendable {
     /// email step and autofill the login page loading is EXPECTED.
     public mutating func backOnLoginPage() {
         switch phase {
-        case .captured, .enterEmail, .autofilling: return
+        case .captured, .consent, .enterEmail, .autofilling: return
         case .signingIn, .fetching, .fetchTimeout: phase = .signingIn
         }
     }

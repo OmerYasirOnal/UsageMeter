@@ -19,6 +19,40 @@ struct LoginFlowModelTests {
         #expect(LoginFlowModel(skipEmailStep: true).phase == .signingIn)
     }
 
+    // MARK: - Consent phase
+
+    @Test func showConsentGateStartsAtConsent() {
+        #expect(LoginFlowModel(showConsentGate: true).phase == .consent)
+    }
+
+    @Test func mockSkipsConsentGateEvenWhenRequested() {
+        #expect(LoginFlowModel(skipEmailStep: true, showConsentGate: true).phase == .signingIn)
+    }
+
+    @Test func consentAcceptedMovesToEmailStep() {
+        var m = LoginFlowModel(showConsentGate: true)
+        m.consentAccepted()
+        #expect(m.phase == .enterEmail)
+    }
+
+    @Test func consentAcceptedIgnoredOutsideConsentPhase() {
+        var m = LoginFlowModel()
+        m.consentAccepted()
+        #expect(m.phase == .enterEmail)
+    }
+
+    @Test func backOnLoginPageIgnoredDuringConsent() {
+        var m = LoginFlowModel(showConsentGate: true)
+        m.backOnLoginPage()
+        #expect(m.phase == .consent)
+    }
+
+    @Test func loggedInPageFinishedIgnoredDuringConsent() {
+        var m = LoginFlowModel(showConsentGate: true)
+        m.loggedInPageFinished(now: t0)
+        #expect(m.phase == .consent)
+    }
+
     // MARK: - Email step
 
     @Test func emailSubmittedStartsAutofill() {
