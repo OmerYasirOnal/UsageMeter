@@ -68,8 +68,14 @@ Note: the **App Store build excludes Source A entirely** (`#if !APPSTORE`), so t
 tension does **not** touch the Mac App Store submission — it applies only to the
 GitHub/Homebrew full variant.
 
-## Decision (to be filled in by Yasir)
+## Decision
 
-- Date decided: _____
-- Choice: _____
-- Rationale / any counsel consulted: _____
+- Date decided: 2026-07-09
+- Choice: Option 1 — keep Source A, add an explicit informed-consent gate before login.
+- Rationale: lowest-effort mitigation that makes the ToS tension explicit to the
+  user rather than only documented in README/PRIVACY prose; the app is already
+  live and being promoted, so an immediate mitigation matters more than a
+  perfect one. Option 3 (OAuth pivot, ROADMAP #12) remains the tracked durable
+  fix — this consent gate is not a substitute for it, just the interim
+  mitigation. Implemented in
+  `docs/superpowers/plans/2026-07-09-source-a-consent-gate.md`.
