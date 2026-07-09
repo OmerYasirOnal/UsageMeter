@@ -294,18 +294,11 @@ struct MenuBarContentView: View {
                 statusIncidentRow
                 #endif
             }
-            HStack {
-                metric(title: "Tokens", value: Formatting.tokens(cc.today.totalTokens))
-                Spacer()
-                if model.settings.showApiValue {
-                    metric(title: "API value", value: Formatting.cost(cc.todayEstimatedCost),
-                           help: "What your tokens would cost at pay-as-you-go API rates — not money you're billed.")
-                }
-            }
+            metric(title: "Tokens", value: Formatting.tokens(cc.today.totalTokens))
             if cc.recordCount == 0 {
                 emptyState
             } else {
-                Text("\(cc.sessionCount) sessions · all-time ≈ \(model.settings.showApiValue ? Formatting.cost(cc.totalEstimatedCost) : Formatting.tokens(cc.total.totalTokens))")
+                Text("\(cc.sessionCount) sessions · all-time ≈ \(Formatting.tokens(cc.total.totalTokens))")
                     .font(.caption2).foregroundStyle(.secondary)
             }
         }
