@@ -354,7 +354,9 @@ make xcodeproj  # generate the Xcode app target (needs XcodeGen)
    clicking the menu-bar item). `docs/screenshots/{dashboard,popover}.png`,
    embedded in README. Note: shots show real project names — re-capture if that
    ever becomes a concern.
-2. **Verify the Pages privacy URL is live.**
+2. ~~**Verify the Pages privacy URL is live.**~~ — ✅ **done 2026-07-09**: confirmed
+   live at https://omeryasironal.github.io/UsageMeter/privacy.html, includes the
+   "not affiliated with Anthropic" trademark disclaimer.
 3. ~~**App icon**~~ — ✅ **done** (code-generated `gaugefill`; `make icon`).
    Menu-bar glyph stays the SF Symbol gauge (Canvas can't render in a menu-bar label).
 4. ~~**Notarize the GitHub download**~~ — ✅ **done 2026-07-02, shipped as v0.2.1.**
