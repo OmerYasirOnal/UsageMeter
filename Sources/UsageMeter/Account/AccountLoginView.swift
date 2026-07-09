@@ -18,7 +18,8 @@ final class LoginWebController: ObservableObject {
     init() {
         // Mock mode loads a local fixture page — the email step makes no sense there.
         let mock = ProcessInfo.processInfo.environment["USAGEMETER_MOCK_USAGE_URL"] != nil
-        flow = LoginFlowModel(skipEmailStep: mock)
+        let consentGranted = UserDefaults.standard.bool(forKey: "accountLoginConsentGranted")
+        flow = LoginFlowModel(skipEmailStep: mock, showConsentGate: !consentGranted)
     }
 
     func reload() { webView?.reload() }
@@ -353,6 +354,7 @@ struct AccountLoginScreen: View {
     @Environment(\.dismissWindow) private var dismissWindow
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("accountLoginEmail") private var email = ""
+    @AppStorage("accountLoginConsentGranted") private var consentGranted = false
     @State private var closeTask: Task<Void, Never>?
     @State private var timeoutTask: Task<Void, Never>?
 
@@ -360,9 +362,9 @@ struct AccountLoginScreen: View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Image(systemName: "person.crop.circle").foregroundStyle(Theme.accent)
-                Text(isEmailStep ? "Sign in with Email" : "Sign in to claude.ai").font(.headline)
+                Text(headerTitle).font(.headline)
                 Spacer()
-                if !isEmailStep {
+                if !isEmailStep && !isConsentStep {
                     Button { controller.reload() } label: { Image(systemName: "arrow.clockwise") }
                         .help("Reload")
                 }
@@ -374,7 +376,9 @@ struct AccountLoginScreen: View {
             Divider()
 
             ZStack {
-                if isEmailStep {
+                if isConsentStep {
+                    consentStep
+                } else if isEmailStep {
                     emailStep
                 } else {
                     AccountLoginView(auth: auth, controller: controller)
@@ -421,7 +425,7 @@ struct AccountLoginScreen: View {
 
             Divider()
             VStack(alignment: .leading, spacing: 4) {
-                if !isEmailStep {
+                if !isEmailStep && !isConsentStep {
                     Label("If \u{201C}Continue with Google\u{201D} errors, try \u{201C}Continue with email\u{201D}.",
                           systemImage: "lightbulb")
                         .font(.caption2).foregroundStyle(Theme.accent)
@@ -463,6 +467,18 @@ struct AccountLoginScreen: View {
     }
 
     private var isEmailStep: Bool { controller.flow.phase == .enterEmail }
+    private var isConsentStep: Bool { controller.flow.phase == .consent }
+
+    private var headerTitle: String {
+        if isConsentStep { return "Before You Continue" }
+        if isEmailStep { return "Sign in with Email" }
+        return "Sign in to claude.ai"
+    }
+
+    private func acceptConsent() {
+        consentGranted = true
+        controller.flow.consentAccepted()
+    }
 
     private func scheduleTick(at deadline: Date) {
         timeoutTask = Task { @MainActor in
@@ -470,6 +486,39 @@ struct AccountLoginScreen: View {
             guard !Task.isCancelled else { return }
             controller.flow.tick(now: Date())
         }
+    }
+
+    // MARK: - Consent step (native, no WebView yet)
+
+    private var consentStep: some View {
+        VStack(spacing: 16) {
+            Spacer(minLength: 12)
+            VStack(alignment: .leading, spacing: 14) {
+                Text("UsageMeter's account features (session %, weekly %, real spend) read your usage numbers by automatically signing in to claude.ai — the same way you're already logged in, just replayed by the app instead of a browser tab.")
+                Text("Anthropic's Consumer Terms of Service prohibit accessing their Services \u{201C}through automated or non-human means\u{201D} except via an official API key. This app does exactly that — for read-only usage numbers only, never your messages or account actions — which means using this feature falls outside Anthropic's stated Terms.")
+                Text("This is entirely optional. Claude Code token tracking works fully without ever logging in.")
+            }
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .padding(20)
+            .background(RoundedRectangle(cornerRadius: 12).fill(.quaternary.opacity(0.35)))
+            .frame(maxWidth: 460)
+
+            Spacer(minLength: 12)
+
+            Button {
+                acceptConsent()
+            } label: {
+                Label("I Understand, Continue", systemImage: "checkmark.circle.fill")
+            }
+            .keyboardShortcut(.defaultAction)
+            .buttonStyle(.borderedProminent)
+            .tint(Theme.accent)
+            .padding(.bottom, 16)
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.background)
     }
 
     // MARK: - Email step (native, no WebView yet)
