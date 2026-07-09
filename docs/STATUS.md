@@ -71,6 +71,14 @@ Four independent slices, all merged task-by-task with individual code review:
   (a stale memory had it as still-pending) — no conflicting in-flight
   submission blocked this one.
 
+### Source A consent gate (2026-07-09)
+
+- **Source A consent gate shipped (2026-07-09).** One-time explicit disclosure
+  screen before claude.ai login (`LoginFlowModel.consent` phase,
+  `AccountLoginScreen.consentStep`), resolving the ToS-tension open item
+  (`docs/TOS_REVIEW.md`). Known limitation: doesn't cover users already logged
+  in before this version — see the note in `TOS_REVIEW.md`'s Decision section.
+
 ### ⛳️ Top open item — needs Yasir's decision: Source A ToS
 The 2026-07-03 ToS review (`docs/TOS_REVIEW.md`) found that Anthropic's **Consumer
 Terms §3 (eff. 2025-10-08)** prohibit automated/script access to claude.ai except

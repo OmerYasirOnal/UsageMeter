@@ -79,3 +79,14 @@ GitHub/Homebrew full variant.
   fix — this consent gate is not a substitute for it, just the interim
   mitigation. Implemented in
   `docs/superpowers/plans/2026-07-09-source-a-consent-gate.md`.
+
+**Known scope limitation (2026-07-09, consciously accepted):** the consent gate
+only fires when the login window is freshly opened at the `.consent` phase — it
+does NOT gate the app's existing background account-refresh
+(`LiveAccountUsageClient`, wired unconditionally in `AppModel.swift`). A user who
+was already logged in to claude.ai *before* upgrading to this version never sees
+the new disclosure; they'd only encounter it by explicitly logging out and back
+in. This is accepted as-is for now (the original spec was scoped to "before
+login," not migrating already-authenticated sessions) rather than expanding scope
+mid-implementation. Revisit if/when Source A's auth mechanism changes (see
+ROADMAP #12, the OAuth pivot).
