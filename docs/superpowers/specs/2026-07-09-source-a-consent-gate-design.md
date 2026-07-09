@@ -35,10 +35,18 @@ they may never read.
 ## `LoginFlowModel` changes (`Sources/UsageMeterKit/Account/LoginFlowModel.swift`)
 
 - `Phase` gains a new case: `case consent`.
-- `init(skipEmailStep: Bool = false, consentGranted: Bool = false)`:
+- `init(skipEmailStep: Bool = false, showConsentGate: Bool = false)`. **Correction
+  from an earlier draft of this spec:** the flag is named and defaulted so that
+  bare `LoginFlowModel()` — used throughout the ~15 existing call sites in
+  `LoginFlowModelTests.swift` — keeps starting at `.enterEmail` unchanged; only the
+  one real production call site (`LoginWebController.init()`, below) explicitly
+  passes `showConsentGate: true` when consent hasn't been granted yet. A
+  `consentGranted: Bool = false` parameter (defaulting to *show* the gate) would
+  have silently broken every existing test that constructs a bare
+  `LoginFlowModel()` expecting `.enterEmail`.
   - `skipEmailStep` (mock) → `.signingIn`, unchanged.
-  - else `consentGranted` → `.enterEmail` (skip the gate — already accepted on this device).
-  - else → `.consent` (new default first screen for a real, first-ever login attempt).
+  - else `showConsentGate` → `.consent` (new — only when the caller explicitly asks for it).
+  - else → `.enterEmail`, unchanged default (matches every existing test's assumption).
 - New mutating method:
   ```swift
   /// The user accepted the automated-access disclosure on the consent screen.
@@ -67,7 +75,7 @@ they may never read.
   ```swift
   let mock = ProcessInfo.processInfo.environment["USAGEMETER_MOCK_USAGE_URL"] != nil
   let consentGranted = UserDefaults.standard.bool(forKey: "accountLoginConsentGranted")
-  flow = LoginFlowModel(skipEmailStep: mock, consentGranted: consentGranted)
+  flow = LoginFlowModel(skipEmailStep: mock, showConsentGate: !consentGranted)
   ```
 - `AccountLoginScreen`:
   - New `@AppStorage("accountLoginConsentGranted") private var consentGranted = false`
@@ -128,10 +136,12 @@ Fill in the previously-blank "Decision" section at the bottom of the file:
 
 ## Testing
 
-`Tests/UsageMeterKitTests/LoginFlowModelTests.swift` — new cases (TDD):
-- Default `init()` (no args) starts at `.consent`.
-- `init(consentGranted: true)` starts at `.enterEmail`.
-- `init(skipEmailStep: true, consentGranted: false)` still starts at `.signingIn`
+`Tests/UsageMeterKitTests/LoginFlowModelTests.swift` — new cases (TDD), all existing
+cases untouched (see the correction above — default behavior is unchanged):
+- Default `init()` (no args) still starts at `.enterEmail` — regression guard for
+  the correction above, so a future edit can't silently flip the default back.
+- `init(showConsentGate: true)` starts at `.consent`.
+- `init(skipEmailStep: true, showConsentGate: true)` still starts at `.signingIn`
   (mock overrides consent gating, matching today's mock behavior).
 - `consentAccepted()` from `.consent` transitions to `.enterEmail`.
 - `consentAccepted()` from any other phase (e.g. `.enterEmail`) is a no-op.
