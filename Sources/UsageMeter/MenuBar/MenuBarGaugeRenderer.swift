@@ -45,18 +45,35 @@ enum MenuBarGaugeRenderer {
 
         // Full track, low alpha.
         ctx.setStrokeColor(CGColor(gray: 0, alpha: 0.28))
-        ctx.addArc(center: center, radius: radius, startAngle: 0, endAngle: .pi * 2, clockwise: false)
+        ctx.addPath(arcPath(center: center, radius: radius, startDeg: 90, endDeg: 90 - 360))
         ctx.strokePath()
 
         guard let percent else { return }
         let fraction = GaugeGeometry.fillFraction(percent: percent)
         guard fraction > 0 else { return }
 
-        // Filled arc, full alpha, starting at 12 o'clock, sweeping clockwise.
-        let start = -CGFloat.pi / 2
-        let end = start + CGFloat(fraction) * 2 * .pi
+        // Filled arc, full alpha, starting at 12 o'clock (90°), sweeping
+        // clockwise as `fraction` grows (decreasing angle in this
+        // math-convention, non-flipped coordinate space).
         ctx.setStrokeColor(CGColor(gray: 0, alpha: 1))
-        ctx.addArc(center: center, radius: radius, startAngle: start, endAngle: end, clockwise: false)
+        ctx.addPath(arcPath(center: center, radius: radius, startDeg: 90, endDeg: 90 - fraction * 360))
         ctx.strokePath()
+    }
+
+    /// Samples an arc as a path by linear angle interpolation — sidesteps
+    /// CGContext.addArc's easily-inverted `clockwise` flag, which is what
+    /// caused this arc to sweep the wrong way originally. Degrees, math
+    /// convention (0 = +x/3 o'clock, 90 = +y/12 o'clock, increasing =
+    /// counterclockwise) — mirrors Scripts/icon/render.swift's `arcPath`.
+    private static func arcPath(center: CGPoint, radius: CGFloat, startDeg: Double, endDeg: Double) -> CGPath {
+        let path = CGMutablePath()
+        let steps = 120
+        for i in 0...steps {
+            let deg = startDeg + (endDeg - startDeg) * Double(i) / Double(steps)
+            let rad = deg * .pi / 180
+            let point = CGPoint(x: center.x + radius * CGFloat(cos(rad)), y: center.y + radius * CGFloat(sin(rad)))
+            if i == 0 { path.move(to: point) } else { path.addLine(to: point) }
+        }
+        return path
     }
 }
