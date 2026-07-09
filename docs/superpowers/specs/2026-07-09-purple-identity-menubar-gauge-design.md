@@ -17,13 +17,18 @@ its own weekly-limit row from the account (Source A), the way Opus already does.
 ## 1. Drop "API value" from the popover glance
 
 - Remove the "API value" `metric(...)` call and its tooltip from
-  `MenuBarContentView.claudeCodeSection` (`Sources/UsageMeter/MenuBar/MenuBarContentView.swift`,
+  `MenuBarContentView.claudeCodeSection` (`Sources/UsageMeter/MenuBar/MenuBarContentView.swift:297-304`,
   the `HStack` around today's "Tokens" metric).
-- The "N sessions · all-time ≈ …" caption currently branches on
-  `model.settings.showApiValue` to show either total cost or total tokens — always
-  show total tokens now (drop the branch).
-- Remove the now-dead `showApiValue` setting: its `@AppStorage`/property in
-  `AppSettings`, and its toggle row in `SettingsView`.
+- The "N sessions · all-time ≈ …" caption (`MenuBarContentView.swift:308`)
+  currently branches on `model.settings.showApiValue` to show either total cost or
+  total tokens — always show total tokens now (drop the branch, drop the ternary).
+- **`AppSettings.showApiValue` and its `SettingsView` toggle are KEPT, not
+  removed.** Correction from the original proposal: `showApiValue` is read in 6
+  places in `Sources/UsageMeter/Dashboard/DashboardView.swift` (chart tooltips,
+  forecast cards, share-card stat) — it's a live Dashboard setting, not dead code.
+  Only the popover's two read-sites (above) are deleted; the setting, its
+  `AppSettings` property/UserDefaults persistence, and its `SettingsView` toggle
+  row are untouched.
 - **Scope: popover glance only.** The Dashboard window's detailed cost/Insights
   cards are unchanged — that's an opt-in deep view, not the glance surface the
   feedback was about.
