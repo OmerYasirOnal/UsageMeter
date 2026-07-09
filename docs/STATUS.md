@@ -36,7 +36,11 @@ Four independent slices, all merged task-by-task with individual code review:
   (`account_capture.json`, 2026-07-06). Classified before the generic kind/group
   heuristics so it can't be silently absorbed into the plain weekly bucket.
   Surfaced under "Weekly Opus" in the popover and included in the near-limit
-  banner + `peakPercent`/`hasAnyMetric`. Demo data updated (6%).
+  banner + `peakPercent`/`hasAnyMetric`. Demo data updated (6%). Post-review fix:
+  `UsageNotifier` now also fires 50/75/90% push notifications for Weekly Fable
+  (parity with Session/Weekly/Weekly Opus) — it's still intentionally left off
+  the Dashboard account card and burn-rate projections (popover-only there),
+  a conscious scope decision, not an oversight.
 - **Verification (Task 9):** 207 tests pass (`swift test`); both `swift build`
   (default, full A+B+C) and `swift build -Xswiftc -DAPPSTORE` (local-only)
   succeed. `make demo` was run in the agent's headless environment — confirmed

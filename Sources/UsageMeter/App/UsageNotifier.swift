@@ -36,7 +36,8 @@ final class UsageNotifier {
             let metrics: [(String, UsageMetric?)] = [
                 ("Session", account.session),
                 ("Weekly", account.weekly),
-                ("Weekly Opus", account.weeklyOpus)
+                ("Weekly Opus", account.weeklyOpus),
+                ("Weekly Fable", account.weeklyFable)
             ]
             for (name, metric) in metrics {
                 guard let metric else { continue }

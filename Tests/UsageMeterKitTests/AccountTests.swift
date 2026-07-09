@@ -149,6 +149,7 @@ private let fixedNow = TestTime.date("2026-06-30T12:00:00Z")
         """#
         let u = try #require(AccountUsageDecoder.decode(Data(json.utf8), now: fixedNow))
         #expect(u.weeklyFable == nil)
+        #expect(u.weekly?.displayPercent == 40)
     }
 }
 
