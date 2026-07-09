@@ -38,16 +38,16 @@ let cropped = full.cropping(to: CGRect(x: cx, y: cyTop, width: cw, height: ch))!
 let CW = 2880, CH = 1800
 let ctx = CGContext(data: nil, width: CW, height: CH, bitsPerComponent: 8, bytesPerRow: 0,
                     space: cs, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
-// Kiln: warm cream gradient background
+// Kiln (violet/plum): soft lavender gradient background
 let g = CGGradient(colorsSpace: cs, colors: [
-    rgb(0.99, 0.97, 0.94), rgb(0.96, 0.92, 0.87)] as CFArray, locations: [0, 1])!
+    rgb(0.985, 0.975, 0.995), rgb(0.929, 0.894, 0.984)] as CFArray, locations: [0, 1])!
 ctx.drawLinearGradient(g, start: CGPoint(x: 0, y: CH), end: CGPoint(x: 0, y: 0), options: [])
 
-// captions — Kiln ink (deep teal) headline + terracotta subhead
+// captions — violet headline + plum/fuchsia subhead
 let hFont = CTFontCreateWithName("HelveticaNeue-Bold" as CFString, 88, nil)
 let sFont = CTFontCreateWithName("HelveticaNeue-Medium" as CFString, 42, nil)
-drawCentered(ctx, headline, hFont, rgb(0.06, 0.29, 0.27), CGFloat(CW) / 2, CGFloat(CH) - 150)
-drawCentered(ctx, subhead, sFont, rgb(0.76, 0.25, 0.05), CGFloat(CW) / 2, CGFloat(CH) - 232)
+drawCentered(ctx, headline, hFont, rgb(0.427, 0.157, 0.851), CGFloat(CW) / 2, CGFloat(CH) - 150)
+drawCentered(ctx, subhead, sFont, rgb(0.525, 0.098, 0.561), CGFloat(CW) / 2, CGFloat(CH) - 232)
 
 // window: fit into region below captions
 let topFromTop: CGFloat = 320, bottomPad: CGFloat = 70, maxW: CGFloat = 2140
