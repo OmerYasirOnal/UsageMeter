@@ -43,13 +43,19 @@ Four independent slices, all merged task-by-task with individual code review:
   a conscious scope decision, not an oversight.
 - **Verification (Task 9):** 207 tests pass (`swift test`); both `swift build`
   (default, full A+B+C) and `swift build -Xswiftc -DAPPSTORE` (local-only)
-  succeed. `make demo` was run in the agent's headless environment — confirmed
-  the app **launches and stays running with no crash log**, but the actual menu-
-  bar glyph rendering, violet/plum colors, "Weekly Fable" row, Dashboard, and
-  light/dark legibility could **NOT be visually verified** (no display in-agent).
-  **Open follow-up:** README + App Store screenshots still show the old Kiln
-  teal/terracotta colors and should be recaptured, and a real human should
-  eyeball the new gauge/colors on a real display before the next release.
+  succeed.
+- **Visual verification — done 2026-07-09.** `make install` + window-targeted
+  `screencapture -l <windowID>` against the real running app (real account
+  data) confirmed the popover, Dashboard, and all 5 Settings tabs render
+  correctly: violet chrome, plum/fuchsia data ink, the dynamic filling gauge in
+  the menu bar, and a real "Weekly Fable" row (30% on the real account — proof
+  the decoder works against a live claude.ai response, not just the captured
+  fixture). README screenshots (`docs/screenshots/{dashboard,popover}.png`)
+  recaptured in the new identity.
+- **Shipped as v1.2.0 (2026-07-09).** Notarized GitHub release live
+  (https://github.com/OmerYasirOnal/UsageMeter/releases/tag/v1.2.0), tag
+  pushed, Homebrew cask (`OmerYasirOnal/homebrew-tap`) bumped to 1.2.0
+  (sha256 `09fea3b4…`), VERSION/project.yml at 1.2.0/9.
 
 ### ⛳️ Top open item — needs Yasir's decision: Source A ToS
 The 2026-07-03 ToS review (`docs/TOS_REVIEW.md`) found that Anthropic's **Consumer
