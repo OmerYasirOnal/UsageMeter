@@ -13,12 +13,12 @@ let cs = CGColorSpace(name: CGColorSpace.sRGB)!
 func col(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat, _ a: CGFloat = 1) -> CGColor {
     CGColor(colorSpace: cs, components: [r, g, b, a])!
 }
-// "Kiln" fired terracotta — the app's own data-ink identity (deliberately NOT
-// Claude's coral #D97757; the gauge shape is the brand, the borrowed color was
-// the liability). Top #F29E54 → mid #C2410C → bottom #7C2D0C.
-let coralTop    = col(0.949, 0.620, 0.329)   // #F29E54 lighter top
-let coralBottom = col(0.486, 0.176, 0.047)   // #7C2D0C deeper bottom
-let coralMid    = col(0.761, 0.255, 0.047)   // #C2410C
+// "Kiln" violet/plum — the app's own data-ink identity (deliberately NOT
+// Claude's coral #D97757; the gauge shape is the brand, not the color). Matches
+// Theme.data in the app. Top #E8A6F0 → mid #A855F7 → bottom #6B21A8.
+let violetTop    = col(0.910, 0.651, 0.941)   // #E8A6F0 lighter top
+let violetBottom = col(0.420, 0.129, 0.659)   // #6B21A8 deeper bottom
+let violetMid    = col(0.659, 0.333, 0.969)   // #A855F7
 
 let white       = col(1, 1, 1)
 
@@ -91,14 +91,14 @@ func drawIcon(_ ctx: CGContext, concept: String, frame f: CGRect) {
     // soft contact shadow
     ctx.saveGState()
     ctx.setShadow(offset: CGSize(width: 0, height: -W * 0.018), blur: W * 0.05, color: col(0, 0, 0, 0.28))
-    ctx.setFillColor(coralBottom)
+    ctx.setFillColor(violetBottom)
     ctx.addPath(sq); ctx.fillPath()
     ctx.restoreGState()
 
     // gradient fill clipped to squircle
     ctx.saveGState()
     ctx.addPath(sq); ctx.clip()
-    let grad = CGGradient(colorsSpace: cs, colors: [coralTop, coralBottom] as CFArray, locations: [0, 1])!
+    let grad = CGGradient(colorsSpace: cs, colors: [violetTop, violetBottom] as CFArray, locations: [0, 1])!
     ctx.drawLinearGradient(grad, start: CGPoint(x: f.midX, y: f.maxY), end: CGPoint(x: f.midX, y: f.minY), options: [])
     // subtle top sheen
     let sheen = CGGradient(colorsSpace: cs, colors: [col(1, 1, 1, 0.16), col(1, 1, 1, 0)] as CFArray, locations: [0, 1])!
@@ -163,7 +163,7 @@ func drawIcon(_ ctx: CGContext, concept: String, frame f: CGRect) {
                    baseW: px <= 32 ? W * 0.075 : W * 0.052, color: white)
         }
         dot(ctx, gc, px <= 32 ? W * 0.07 : W * 0.052, white)
-        if px > 32 { dot(ctx, gc, W * 0.020, coralMid) }   // pivot center
+        if px > 32 { dot(ctx, gc, W * 0.020, violetMid) }   // pivot center
 
     case "arcdots":
         // gauge made of dots + needle (mirrors the SF symbol the app uses)
