@@ -36,6 +36,7 @@ enum DemoData {
             session: UsageMetric(percent: 42, resetsAt: now.addingTimeInterval(2 * 3600 + 9 * 60)),
             weekly: UsageMetric(percent: 18, resetsAt: now.addingTimeInterval(3 * 86_400 + 4 * 3600)),
             weeklyOpus: UsageMetric(percent: 31, resetsAt: now.addingTimeInterval(3 * 86_400 + 4 * 3600)),
+            weeklyFable: UsageMetric(percent: 6, resetsAt: now.addingTimeInterval(3 * 86_400 + 4 * 3600)),
             spend: SpendInfo(usedMinor: 0, currency: "USD", exponent: 2, canPurchaseCredits: true),
             fetchedAt: now)
         #endif

@@ -132,6 +132,7 @@ struct MenuBarContentView: View {
             if let session = account.session { sessionHero(session) }
             if let weekly = account.weekly { compactMetric("Weekly Limit", key: "Weekly", weekly) }
             if let opus = account.weeklyOpus { compactMetric("Weekly Opus", key: "Weekly Opus", opus) }
+            if let fable = account.weeklyFable { compactMetric("Weekly Fable", key: "Weekly Fable", fable) }
             if let spend = account.spend, spend.usedAmount > 0 {
                 HStack {
                     Text("Pay-as-you-go used").font(.caption).foregroundStyle(.secondary)
@@ -235,7 +236,7 @@ struct MenuBarContentView: View {
     private func limitBanner(_ account: AccountUsage) -> (some View)? {
         let peak = account.peakPercent
         if peak >= 75 {
-            let nearest = [account.session, account.weekly, account.weeklyOpus]
+            let nearest = [account.session, account.weekly, account.weeklyOpus, account.weeklyFable]
                 .compactMap { $0 }
                 .max(by: { $0.percent < $1.percent })
             let resets = Formatting.resetDescription(to: nearest?.resetsAt)
