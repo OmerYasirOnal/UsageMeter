@@ -1,8 +1,51 @@
 # Project Status & Handoff — UsageMeter
 
-_Last updated: 2026-07-04. Read this first when resuming in a new session._
+_Last updated: 2026-07-09. Read this first when resuming in a new session._
 
 ## ⭐ Resume point (where we left off)
+
+### Purple identity + dynamic menu-bar gauge + Weekly Fable (2026-07-09, all shipped)
+Branch `worktree-purple-identity-menubar-gauge`, plan
+`docs/superpowers/plans/2026-07-09-purple-identity-menubar-gauge.md`, spec
+`docs/superpowers/specs/2026-07-09-purple-identity-menubar-gauge-design.md`.
+Four independent slices, all merged task-by-task with individual code review:
+- **Identity recolored teal/terracotta ("Kiln") → violet/plum.** `Theme.swift`
+  chrome (`accent`/`accentSoft`) is now violet (`#6D28D9`/`#A78BFA`), data ink
+  (`data`/`dataMuted`, chart gradient, heatmap ramp) is plum/fuchsia
+  (`#86198F`/`#E879F9` family). The app icon (`Scripts/icon/render.swift`,
+  `make icon`) was recolored to match and regenerated (`Resources/AppIcon.icns`
+  + the asset catalog). `Theme.ok`/`warning`/`danger` (escalation colors) were
+  deliberately left untouched.
+- **Menu-bar glyph is now a rendered dynamic gauge, not the SF Symbol.** New
+  `GaugeGeometry` (Kit, pure percent→fill-fraction math, tested) +
+  `MenuBarGaugeRenderer` (app target, CoreGraphics, pre-renders a filling-ring
+  template `NSImage` — a live `Canvas` still can't render inside a
+  `MenuBarExtra` label, same constraint as before) replace the old static
+  `gauge.with.dots.needle.50percent` SF Symbol in `MenuBarLabel.swift`. The ring
+  fills clockwise from 12 o'clock to the session `%`; with no account data
+  (logged out / local-only) it draws just the empty track.
+- **"API value" removed from the popover glance** (`MenuBarContentView.swift`
+  `claudeCodeSection`) — the Claude Code — Today section now shows only Tokens;
+  the all-time caption reads in tokens, not a dollar estimate. The Dashboard is
+  unchanged and still shows API value (`AppSettings.showApiValue` kept, 6
+  read-sites there untouched).
+- **"Weekly Fable" popover row** — `AccountUsage.weeklyFable: UsageMetric?`
+  (mirrors `weeklyOpus`) decodes from a real model-scoped entry in claude.ai's
+  `limits[]` array (`scope.model.display_name`/`id` containing "fable"),
+  verified against a real captured `/usage` response
+  (`account_capture.json`, 2026-07-06). Classified before the generic kind/group
+  heuristics so it can't be silently absorbed into the plain weekly bucket.
+  Surfaced under "Weekly Opus" in the popover and included in the near-limit
+  banner + `peakPercent`/`hasAnyMetric`. Demo data updated (6%).
+- **Verification (Task 9):** 207 tests pass (`swift test`); both `swift build`
+  (default, full A+B+C) and `swift build -Xswiftc -DAPPSTORE` (local-only)
+  succeed. `make demo` was run in the agent's headless environment — confirmed
+  the app **launches and stays running with no crash log**, but the actual menu-
+  bar glyph rendering, violet/plum colors, "Weekly Fable" row, Dashboard, and
+  light/dark legibility could **NOT be visually verified** (no display in-agent).
+  **Open follow-up:** README + App Store screenshots still show the old Kiln
+  teal/terracotta colors and should be recaptured, and a real human should
+  eyeball the new gauge/colors on a real display before the next release.
 
 ### ⛳️ Top open item — needs Yasir's decision: Source A ToS
 The 2026-07-03 ToS review (`docs/TOS_REVIEW.md`) found that Anthropic's **Consumer
@@ -267,14 +310,15 @@ make xcodeproj  # generate the Xcode app target (needs XcodeGen)
   path is the sandboxed App Store target.** Two build paths on purpose.
 - **App icon is code-generated** — regenerate/tweak via `make icon` (edit
   `Scripts/icon/render.swift`; the `gaugefill` case is the shipping concept).
-- **Menu-bar glyph = SF Symbol `gauge.with.dots.needle.50percent`.** ⚠️ We tried a
-  custom `Canvas` mark (`GaugeGlyph`) but **`Canvas` does not render in a MenuBarExtra
-  label** (AppKit snapshots the label to a *template image*; Canvas draws blank and
-  breaks the layout so the % after it vanishes too). Reverted to the SF Symbol gauge
-  (same family as the icon, templates + tints reliably, supports the live-% overlay).
-  The custom gauge lives where it renders correctly: the **app icon** (CG-rendered
-  `.icns`). If a custom menu-bar mark is ever wanted, pre-render it to a template
-  PDF/PNG (`Image(...).renderingMode(.template)`), not a live `Canvas`.
+- **Menu-bar glyph is a rendered dynamic gauge (`MenuBarGaugeRenderer`, since
+  2026-07-09), not the SF Symbol.** ⚠️ A live `Canvas` mark (`GaugeGlyph`) still
+  does **not** render in a MenuBarExtra label (AppKit snapshots the label to a
+  *template image*; Canvas draws blank and breaks the layout). The fix that
+  shipped: pre-render the gauge to a template `NSImage` with CoreGraphics
+  (`MenuBarGaugeRenderer.render(percent:)`, driven by `GaugeGeometry`'s pure
+  fill-fraction math) instead of drawing it live — same precedent as the app
+  icon script. If a custom menu-bar mark is ever changed again, keep pre-
+  rendering to a template image; don't reach for a live `Canvas`.
 - Login auto-close triggers on `auth.lastCaptured` (real usage capture), never while
   typing credentials.
 
