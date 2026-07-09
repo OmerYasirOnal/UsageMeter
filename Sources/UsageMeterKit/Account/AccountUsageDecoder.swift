@@ -38,8 +38,13 @@ public enum AccountUsageDecoder {
     private struct RawUsage: Decodable {
         struct Window: Decodable { let utilization: Double?; let resets_at: String? }
         struct Limit: Decodable {
+            struct Scope: Decodable {
+                struct Model: Decodable { let id: String?; let display_name: String? }
+                let model: Model?
+            }
             let kind: String?; let group: String?; let percent: Double?
             let resets_at: String?; let is_active: Bool?
+            let scope: Scope?
         }
         struct SpendUsed: Decodable { let amount_minor: Int?; let currency: String?; let exponent: Int? }
         struct Spend: Decodable { let used: SpendUsed?; let can_purchase_credits: Bool? }
@@ -69,13 +74,22 @@ public enum AccountUsageDecoder {
         var session = windowMetric(raw.five_hour)
         var weekly = windowMetric(raw.seven_day)
         var weeklyOpus = windowMetric(raw.seven_day_opus)
+        var weeklyFable: UsageMetric?
 
         // FALLBACK: the `limits` array (also 0...100) for any category the windows
-        // didn't provide. Classify by kind+group tokens.
+        // didn't provide. Model-scoped limits (`scope.model.display_name`, e.g.
+        // Fable) are classified FIRST so they don't fall through to the generic
+        // kind/group text heuristics below and get silently absorbed into the
+        // plain weekly bucket.
         for limit in raw.limits ?? [] {
             guard let p = limit.percent else { continue }
-            let key = ((limit.kind ?? "") + " " + (limit.group ?? "")).lowercased()
             let metric = UsageMetric(percent: min(100.0, max(0.0, p)), resetsAt: reset(limit.resets_at))
+            let modelName = (limit.scope?.model?.display_name ?? limit.scope?.model?.id ?? "").lowercased()
+            if modelName.contains("fable") {
+                weeklyFable = weeklyFable ?? metric
+                continue
+            }
+            let key = ((limit.kind ?? "") + " " + (limit.group ?? "")).lowercased()
             if key.contains("opus") {
                 weeklyOpus = weeklyOpus ?? metric
             } else if key.contains("sonnet") || key.contains("haiku") {
@@ -96,7 +110,7 @@ public enum AccountUsageDecoder {
         }
 
         let usage = AccountUsage(session: session, weekly: weekly, weeklyOpus: weeklyOpus,
-                                 spend: spend, fetchedAt: now)
+                                 weeklyFable: weeklyFable, spend: spend, fetchedAt: now)
         return (usage.hasAnyMetric || usage.spend != nil) ? usage : nil
     }
 
@@ -109,12 +123,15 @@ public enum AccountUsageDecoder {
         var session: UsageMetric?
         var weekly: UsageMetric?
         var weeklyOpus: UsageMetric?
+        var weeklyFable: UsageMetric?
 
         walk(root, nearestKey: "", depth: 0) { dict, nearestKey in
             guard let metric = metric(from: dict, now: now) else { return }
             let key = nearestKey.lowercased()
             if key.contains("opus") {
                 weeklyOpus = weeklyOpus ?? metric
+            } else if key.contains("fable") {
+                weeklyFable = weeklyFable ?? metric
             } else if key.contains("week") || key.contains("seven")
                         || key.contains("7day") || key.contains("7_day") {
                 weekly = weekly ?? metric
@@ -124,8 +141,9 @@ public enum AccountUsageDecoder {
             }
         }
 
-        guard session != nil || weekly != nil || weeklyOpus != nil else { return nil }
-        return AccountUsage(session: session, weekly: weekly, weeklyOpus: weeklyOpus, fetchedAt: now)
+        guard session != nil || weekly != nil || weeklyOpus != nil || weeklyFable != nil else { return nil }
+        return AccountUsage(session: session, weekly: weekly, weeklyOpus: weeklyOpus,
+                            weeklyFable: weeklyFable, fetchedAt: now)
     }
 
     // MARK: - Heuristics

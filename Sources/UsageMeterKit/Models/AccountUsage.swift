@@ -53,6 +53,9 @@ public struct AccountUsage: Codable, Sendable, Equatable {
     public var weekly: UsageMetric?
     /// Separate weekly Opus limit, when the account/plan reports one.
     public var weeklyOpus: UsageMetric?
+    /// Separate weekly Fable limit, when the account/plan reports one (a
+    /// model-scoped entry in the `limits[]` array, not a top-level window).
+    public var weeklyFable: UsageMetric?
     /// Real pay-as-you-go spend from claude.ai (the user's actual money).
     public var spend: SpendInfo?
     /// When these numbers were fetched.
@@ -62,24 +65,26 @@ public struct AccountUsage: Codable, Sendable, Equatable {
         session: UsageMetric? = nil,
         weekly: UsageMetric? = nil,
         weeklyOpus: UsageMetric? = nil,
+        weeklyFable: UsageMetric? = nil,
         spend: SpendInfo? = nil,
         fetchedAt: Date? = nil
     ) {
         self.session = session
         self.weekly = weekly
         self.weeklyOpus = weeklyOpus
+        self.weeklyFable = weeklyFable
         self.spend = spend
         self.fetchedAt = fetchedAt
     }
 
     /// Whether any dimension was actually populated.
     public var hasAnyMetric: Bool {
-        session != nil || weekly != nil || weeklyOpus != nil
+        session != nil || weekly != nil || weeklyOpus != nil || weeklyFable != nil
     }
 
     /// The highest utilization across dimensions — drives "near limit" logic.
     public var peakPercent: Double {
-        [session?.percent, weekly?.percent, weeklyOpus?.percent]
+        [session?.percent, weekly?.percent, weeklyOpus?.percent, weeklyFable?.percent]
             .compactMap { $0 }
             .max() ?? 0
     }

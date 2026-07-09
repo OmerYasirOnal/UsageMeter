@@ -115,6 +115,41 @@ private let fixedNow = TestTime.date("2026-06-30T12:00:00Z")
         let u = try #require(AccountUsageDecoder.decode(Data(json.utf8), now: fixedNow))
         #expect(u.spend?.usedAmount == 3.5)
     }
+
+    /// Derived from the real captured claude.ai /usage response (2026-07-06,
+    /// account_capture.json) — org id redacted, unrelated null fields trimmed,
+    /// Fable's percent bumped from 0 to 15 so the assertion is meaningful.
+    @Test func decodesWeeklyFableFromScopedLimit() throws {
+        let json = #"""
+        {
+          "five_hour": {"utilization": 2, "resets_at": "2026-07-06T14:00:00Z"},
+          "seven_day": {"utilization": 0, "resets_at": "2026-07-08T08:00:00Z"},
+          "seven_day_opus": null,
+          "limits": [
+            {"kind": "session", "group": "session", "percent": 2, "resets_at": "2026-07-06T14:00:00Z", "scope": null, "is_active": true},
+            {"kind": "weekly_all", "group": "weekly", "percent": 0, "resets_at": "2026-07-08T08:00:00Z", "scope": null, "is_active": false},
+            {"kind": "weekly_scoped", "group": "weekly", "percent": 15, "resets_at": "2026-07-08T08:00:00Z", "scope": {"model": {"id": null, "display_name": "Fable"}}, "is_active": false}
+          ]
+        }
+        """#
+        let u = try #require(AccountUsageDecoder.decode(Data(json.utf8), now: fixedNow))
+        #expect(u.weeklyFable?.displayPercent == 15)
+        #expect(u.weeklyFable?.resetsAt == TestTime.date("2026-07-08T08:00:00Z"))
+        #expect(u.weekly?.displayPercent == 0) // weekly_all, unaffected by the Fable-scoped limit
+    }
+
+    @Test func doesNotMisclassifyOtherModelScopedLimitsAsFable() throws {
+        let json = #"""
+        {
+          "five_hour": {"utilization": 5, "resets_at": "2026-07-06T14:00:00Z"},
+          "limits": [
+            {"kind": "weekly_scoped", "group": "weekly", "percent": 40, "resets_at": "2026-07-08T08:00:00Z", "scope": {"model": {"id": null, "display_name": "Sonnet"}}, "is_active": true}
+          ]
+        }
+        """#
+        let u = try #require(AccountUsageDecoder.decode(Data(json.utf8), now: fixedNow))
+        #expect(u.weeklyFable == nil)
+    }
 }
 
 // MARK: - Adaptive refresh policy
@@ -151,9 +186,10 @@ private let fixedNow = TestTime.date("2026-06-30T12:00:00Z")
         #expect(AccountUsage().hasAnyMetric == false)
         let u = AccountUsage(session: UsageMetric(percent: 12),
                              weekly: UsageMetric(percent: 80),
-                             weeklyOpus: UsageMetric(percent: 55))
+                             weeklyOpus: UsageMetric(percent: 55),
+                             weeklyFable: UsageMetric(percent: 95))
         #expect(u.hasAnyMetric)
-        #expect(u.peakPercent == 80)
+        #expect(u.peakPercent == 95)
     }
 
     @Test func displayPercentClampsAndRounds() {
