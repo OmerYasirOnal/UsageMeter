@@ -26,23 +26,23 @@ extension Color {
     }
 }
 
-// MARK: - Theme ("Kiln": teal interactive chrome + terracotta data ink)
+// MARK: - Theme ("Kiln": violet interactive chrome + plum/fuchsia data ink)
 
 /// Shared visual language. The identity is a duotone: everything you *click*
-/// (buttons, links, tint, pickers) is deep teal; everything that *is data*
-/// (chart bars, heatmap, the gauge brand mark) is fired terracotta. Chrome and
-/// data never compete, and quota state escalates teal → amber → red — a ramp
-/// that stays legible under deutan/protan color vision.
+/// (buttons, links, tint, pickers) is violet; everything that *is data*
+/// (chart bars, heatmap, the gauge brand mark) is a plum/fuchsia purple. Chrome
+/// and data never compete, and quota state escalates violet → amber → red — a
+/// ramp that stays legible under deutan/protan color vision.
 enum Theme {
     /// Interactive chrome: buttons, links, `.tint`, selection.
-    static let accent = Color(light: 0x0F766E, dark: 0x2DD4BF)
-    static let accentSoft = Color(light: 0xDDF0ED, dark: 0x11332F)
+    static let accent = Color(light: 0x6D28D9, dark: 0xA78BFA)
+    static let accentSoft = Color(light: 0xEDE4FB, dark: 0x2C1F47)
 
     /// Data ink: chart bars, heatmap, the gauge brand mark. Not for controls.
-    static let data = Color(light: 0xC2410C, dark: 0xFB923C)
+    static let data = Color(light: 0x86198F, dark: 0xE879F9)
     /// De-emphasized companion to `data` — trend lines and context bars that
-    /// must read as "same family, quieter" next to terracotta marks.
-    static let dataMuted = Color(light: 0x9A6B4F, dark: 0xB08968)
+    /// must read as "same family, quieter" next to the data-ink marks.
+    static let dataMuted = Color(light: 0xA9779A, dark: 0xC79BC0)
 
     static let ok = Color(light: 0x277E42, dark: 0x4ADE80)
     static let warning = Color(light: 0x96690B, dark: 0xFBBF24)
@@ -71,8 +71,8 @@ enum Theme {
     }
 
     /// Usage-history chart bar gradient (data ink).
-    static let chartTop = Color(light: 0xE58F5E, dark: 0xFDAF74)
-    static let chartBottom = Color(light: 0xC2410C, dark: 0xEA7A33)
+    static let chartTop = Color(light: 0xC77DD1, dark: 0xF0A8F5)
+    static let chartBottom = Color(light: 0x86198F, dark: 0xC026D3)
     static var chartGradient: LinearGradient {
         LinearGradient(colors: [chartTop, chartBottom], startPoint: .top, endPoint: .bottom)
     }
@@ -80,10 +80,10 @@ enum Theme {
     /// Opaque heatmap ramp (levels 1–4). Opaque on purpose: translucent accent
     /// steps shifted with the card behind them and vanished in dark mode.
     static let heat: [Color] = [
-        Color(light: 0xF6E0D2, dark: 0x3E2415),
-        Color(light: 0xECB088, dark: 0x6E3D1E),
-        Color(light: 0xD0784A, dark: 0xB45E2C),
-        Color(light: 0xA93E0F, dark: 0xFB923C)
+        Color(light: 0xF1E0F7, dark: 0x3A1F45),
+        Color(light: 0xD9AEEF, dark: 0x5E2E6E),
+        Color(light: 0xB166D9, dark: 0x8B3FA0),
+        Color(light: 0x86198F, dark: 0xE879F9)
     ]
     /// Empty heatmap cell / neutral inset fill — adapts with the system.
     static let heatEmpty = Color(nsColor: .quaternarySystemFill)
