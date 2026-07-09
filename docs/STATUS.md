@@ -56,6 +56,20 @@ Four independent slices, all merged task-by-task with individual code review:
   (https://github.com/OmerYasirOnal/UsageMeter/releases/tag/v1.2.0), tag
   pushed, Homebrew cask (`OmerYasirOnal/homebrew-tap`) bumped to 1.2.0
   (sha256 `09fea3b4…`), VERSION/project.yml at 1.2.0/9.
+- **Mac App Store 1.2.0 submitted (2026-07-09), `WAITING_FOR_REVIEW`.** Headless
+  flow via `Scripts/release/` (asc.py/build script/upload_shot.py, ASC API key
+  `93HFBMV3MA`): local-only archive built + verified (no WebKit, no ToS
+  strings) → uploaded (build 9, `VALID`) → new `appStoreVersion` 1.2.0 created
+  → build attached → "What's New" written → **both App Store screenshots
+  recaptured against the real sandboxed local-only build with real Claude Code
+  data** (not sample/demo — granted `~/.claude` folder access via the
+  in-app flow, then window-targeted `screencapture`), composited through
+  `Scripts/release/caption.swift` (now recolored violet/plum to match) →
+  uploaded, replacing the old teal Kiln shots → review submission created and
+  submitted (`reviewSubmissions` id `1a256d1e…`). Auto-release on approval.
+  Note v1.0.0 was actually already `READY_FOR_SALE` going into this session
+  (a stale memory had it as still-pending) — no conflicting in-flight
+  submission blocked this one.
 
 ### ⛳️ Top open item — needs Yasir's decision: Source A ToS
 The 2026-07-03 ToS review (`docs/TOS_REVIEW.md`) found that Anthropic's **Consumer
