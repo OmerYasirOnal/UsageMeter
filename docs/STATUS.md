@@ -79,18 +79,18 @@ Four independent slices, all merged task-by-task with individual code review:
   (`docs/TOS_REVIEW.md`). Known limitation: doesn't cover users already logged
   in before this version — see the note in `TOS_REVIEW.md`'s Decision section.
 
-### ⛳️ Top open item — needs Yasir's decision: Source A ToS
+### ✅ Resolved: Source A ToS decision (2026-07-09)
 The 2026-07-03 ToS review (`docs/TOS_REVIEW.md`) found that Anthropic's **Consumer
 Terms §3 (eff. 2025-10-08)** prohibit automated/script access to claude.ai except
 via an API key — which **directly describes what Source A does** (headless
-usage-endpoint replay with the user's cookies). This is a real decision, not a
-formality. Four options in the doc: (1) keep + explicit consent gate, (2) gate
-behind an off-by-default "experimental" switch, (3) **pivot to the official OAuth
-usage endpoint Claude Code itself uses** (ROADMAP #12 — the durable fix, creds
-already in `~/.claude`), (4) drop Source A from distributed builds. **A login
-consent sheet was intentionally NOT built yet — it's only option 1, and the choice
-is pending.** Note: the **App Store variant excludes Source A** (`#if !APPSTORE`),
-so this does not touch the MAS submission.
+usage-endpoint replay with the user's cookies). Of the four documented options,
+**Option 1 was chosen: keep Source A, add an explicit informed-consent gate
+before login** — implemented 2026-07-09 (see the "Source A consent gate" bullet
+above and `docs/TOS_REVIEW.md`'s Decision section, including its noted scope
+limitation). Option 3 (pivot to the official OAuth usage endpoint, ROADMAP #12)
+remains the tracked durable fix — this consent gate is an interim mitigation, not
+a replacement for it. Note: the **App Store variant excludes Source A**
+(`#if !APPSTORE`), so none of this touches the MAS submission.
 
 ### Post-v1.1.0 hardening (2026-07-03, all shipped)
 - **CI** — `.github/workflows/ci.yml` runs `swift test` + full build + APPSTORE-variant
