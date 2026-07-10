@@ -390,6 +390,9 @@ struct DashboardView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Weekly rhythm").font(.title3.bold())
                     Text("Average tokens by weekday · last 12 weeks").font(.caption).foregroundStyle(.secondary)
+                    if let caption = weekdayComparisonCaption(averages, todayWeekday: todayWeekday) {
+                        Text(caption).font(.caption).foregroundStyle(.secondary)
+                    }
                 }
                 Chart(ordered) { item in
                     BarMark(
@@ -427,6 +430,21 @@ struct DashboardView: View {
         }
     }
 
+    /// "Today runs 18% above your usual" / "12% below your usual" — plain
+    /// comparison of today's weekday average against the overall average
+    /// across all seven weekdays. Nil when there's no usable baseline.
+    private func weekdayComparisonCaption(_ averages: [WeekdayAverage], todayWeekday: Int) -> String? {
+        guard let todayAverage = averages.first(where: { $0.weekday == todayWeekday })?.averageTokens else {
+            return nil
+        }
+        let overall = Double(averages.reduce(0) { $0 + $1.averageTokens }) / Double(averages.count)
+        guard overall > 0 else { return nil }
+        let diff = (Double(todayAverage) - overall) / overall * 100
+        if abs(diff) < 5 { return "About your usual day" }
+        let direction = diff >= 0 ? "above" : "below"
+        return "Today runs \(Formatting.percent(abs(diff))) \(direction) your usual"
+    }
+
     // MARK: - Activity grid
 
     private func activityCard(_ allPoints: [DailyPoint]) -> some View {
@@ -446,7 +464,7 @@ struct DashboardView: View {
                     Image(systemName: "sparkle.magnifyingglass").foregroundStyle(Theme.data)
                 }
                 .font(.caption).foregroundStyle(.secondary)
-                .help("Days above your average + 2σ — statistical outliers in your usage.")
+                .help("Days noticeably busier than usual for you.")
             }
         }
         .card()
