@@ -1,8 +1,20 @@
 # Project Status & Handoff — UsageMeter
 
-_Last updated: 2026-07-09. Read this first when resuming in a new session._
+_Last updated: 2026-07-10. Read this first when resuming in a new session._
 
 ## ⭐ Resume point (where we left off)
+
+### v1.2.1 — menu-bar gauge purple fill (2026-07-10, all shipped)
+Follow-up to the 2026-07-09 purple-identity work: the gauge ring was rendered as
+a flat monochrome template image, so the fill level wasn't legible. Fixed with
+`Theme.gaugeFillColor(_:)` (plum/fuchsia below 75%, amber 75–90%, red ≥90%) +
+`MenuBarGaugeRenderer` rendering a non-template colored image. 213 tests pass.
+Released same day across all three channels: GitHub (notarized,
+https://github.com/OmerYasirOnal/UsageMeter/releases/tag/v1.2.1), Homebrew cask
+(`OmerYasirOnal/homebrew-tap`, sha256 `69499025…`), and Mac App Store (build 10,
+appStoreVersion 1.2.1 created, build attached, What's New written, review
+submission `c28ba681…` submitted → **`WAITING_FOR_REVIEW`**). VERSION/project.yml
+at 1.2.1/10.
 
 ### Purple identity + dynamic menu-bar gauge + Weekly Fable (2026-07-09, all shipped)
 Branch `worktree-purple-identity-menubar-gauge`, plan
@@ -56,7 +68,7 @@ Four independent slices, all merged task-by-task with individual code review:
   (https://github.com/OmerYasirOnal/UsageMeter/releases/tag/v1.2.0), tag
   pushed, Homebrew cask (`OmerYasirOnal/homebrew-tap`) bumped to 1.2.0
   (sha256 `09fea3b4…`), VERSION/project.yml at 1.2.0/9.
-- **Mac App Store 1.2.0 submitted (2026-07-09), `WAITING_FOR_REVIEW`.** Headless
+- **Mac App Store 1.2.0 submitted (2026-07-09) — since approved, `READY_FOR_SALE`.** Headless
   flow via `Scripts/release/` (asc.py/build script/upload_shot.py, ASC API key
   `93HFBMV3MA`): local-only archive built + verified (no WebKit, no ToS
   strings) → uploaded (build 9, `VALID`) → new `appStoreVersion` 1.2.0 created
