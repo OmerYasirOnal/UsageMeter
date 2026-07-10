@@ -52,6 +52,12 @@ enum Formatting {
         }
     }
 
+    /// A share like "34%" — rounded to the nearest whole percent (a UI where
+    /// exact-to-the-tenth wouldn't change the takeaway).
+    static func percent(_ value: Double) -> String {
+        "\(Int(value.rounded()))%"
+    }
+
     /// Real money in the account's currency (e.g. "$0.00", "€3.20").
     static func money(_ amount: Double, currency: String) -> String {
         let f = NumberFormatter()
