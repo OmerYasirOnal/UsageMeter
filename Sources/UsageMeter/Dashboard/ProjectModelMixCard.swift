@@ -17,6 +17,31 @@ struct ProjectModelMixCard: View {
         return ModelFamily.allCases.filter { present.contains($0) }
     }
 
+    /// The chart's Y-axis / hover row key, per project. Swift Charts groups
+    /// and positions `BarMark`s by this value (and the hover code resolves it
+    /// back to a project), so it must be unique — but `displayName` is a
+    /// lossy, trailing-path-derived label (`ProjectName.display(forSlug:)`)
+    /// and two distinct projects (different `projectID`) can legitimately
+    /// share one. Disambiguate ONLY the colliding entries — projects with a
+    /// unique `displayName` (the common case) render exactly as before.
+    private var rowLabels: [String: String] {
+        var counts: [String: Int] = [:]
+        for project in breakdown { counts[project.displayName, default: 0] += 1 }
+        var labels: [String: String] = [:]
+        for project in breakdown {
+            if (counts[project.displayName] ?? 0) > 1 {
+                labels[project.projectID] = "\(project.displayName) (\(project.projectID.suffix(6)))"
+            } else {
+                labels[project.projectID] = project.displayName
+            }
+        }
+        return labels
+    }
+
+    private func rowLabel(for project: ProjectBreakdown) -> String {
+        rowLabels[project.projectID] ?? project.displayName
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 1) {
@@ -28,7 +53,7 @@ struct ProjectModelMixCard: View {
                 ForEach(project.segments) { segment in
                     BarMark(
                         x: .value("Tokens", segment.tokens),
-                        y: .value("Project", project.displayName)
+                        y: .value("Project", rowLabel(for: project))
                     )
                     .foregroundStyle(Theme.modelColor(segment.family))
                     .cornerRadius(3)
@@ -96,9 +121,15 @@ struct ProjectModelMixCard: View {
         let x = location.x - plotFrame.minX
         let y = location.y - plotFrame.minY
         guard let projectName: String = proxy.value(atY: y),
-              let project = breakdown.first(where: { $0.displayName == projectName }),
+              let project = breakdown.first(where: { rowLabel(for: $0) == projectName }),
               let tokenX: Int = proxy.value(atX: x)
         else { return nil }
+        // The x-axis domain is shared across all rows (Swift Charts scales one
+        // axis to the max bar total), so a shorter project's bar leaves empty
+        // space to the right of it, still inside the plot/row band. Hovering
+        // that gutter is past the project's actual data — report nothing
+        // rather than falling back to its last segment.
+        guard tokenX <= project.totalTokens else { return nil }
         var cumulative = 0
         for segment in project.segments {
             cumulative += segment.tokens
