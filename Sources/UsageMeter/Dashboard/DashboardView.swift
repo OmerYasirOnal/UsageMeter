@@ -487,6 +487,7 @@ struct DashboardView: View {
             ? model.snapshot.claudeCode.byModel
             : DashboardMetrics.modelUsage(model.snapshot.claudeCode.dailyByModel, range: range)
         let maxTokens = max(1, models.map { $0.usage.totalTokens }.max() ?? 1)
+        let totalTokens = models.reduce(0) { $0 + $1.usage.totalTokens }
         return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 6) {
                 Text("By model").font(.title3.bold())
@@ -498,7 +499,12 @@ struct DashboardView: View {
                     HStack {
                         Text(m.family.displayName).font(.callout.weight(.medium))
                         Spacer()
+                        Text(Formatting.percent(totalTokens > 0
+                                                 ? Double(m.usage.totalTokens) / Double(totalTokens) * 100 : 0))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 46, alignment: .trailing).monospacedDigit()
                         Text(Formatting.tokens(m.usage.totalTokens)).monospacedDigit()
+                            .frame(width: 64, alignment: .trailing)
                         Text(Formatting.cost(m.estimatedCost)).foregroundStyle(.secondary)
                             .frame(width: 84, alignment: .trailing).monospacedDigit()
                     }
@@ -514,7 +520,9 @@ struct DashboardView: View {
     // MARK: - By project
 
     private var byProjectCard: some View {
-        let projects = Array(model.snapshot.claudeCode.byProject.prefix(8))
+        let allProjects = model.snapshot.claudeCode.byProject
+        let projects = Array(allProjects.prefix(8))
+        let totalTokens = allProjects.reduce(0) { $0 + $1.usage.totalTokens }
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
                 Text("By project").font(.title3.bold())
@@ -525,6 +533,7 @@ struct DashboardView: View {
             HStack {
                 Text("Project").frame(maxWidth: .infinity, alignment: .leading)
                 Text("Sessions").frame(width: 70, alignment: .trailing)
+                Text("%").frame(width: 46, alignment: .trailing)
                 Text("Tokens").frame(width: 80, alignment: .trailing)
                 Text("Cost").frame(width: 80, alignment: .trailing)
             }
@@ -534,6 +543,10 @@ struct DashboardView: View {
                     Text(p.displayName).lineLimit(1).truncationMode(.middle)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Text("\(p.sessionCount)").frame(width: 70, alignment: .trailing)
+                    Text(Formatting.percent(totalTokens > 0
+                                             ? Double(p.usage.totalTokens) / Double(totalTokens) * 100 : 0))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 46, alignment: .trailing)
                     Text(Formatting.tokens(p.usage.totalTokens)).frame(width: 80, alignment: .trailing)
                     Text(Formatting.cost(p.estimatedCost)).foregroundStyle(.secondary)
                         .frame(width: 80, alignment: .trailing)
