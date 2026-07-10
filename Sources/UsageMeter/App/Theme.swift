@@ -60,6 +60,18 @@ enum Theme {
         }
     }
 
+    /// The menu-bar gauge fill: the plum/fuchsia gauge-brand purple normally,
+    /// escalating to amber/red as the session limit nears. Mirrors `usageColor`
+    /// but is keyed to `data` (the gauge brand mark) rather than the interactive
+    /// `accent` — the filling ring *is* data, not a control.
+    static func gaugeFillColor(_ percent: Double) -> Color {
+        switch percent {
+        case 90...: return danger
+        case 75..<90: return warning
+        default: return data
+        }
+    }
+
     /// Big % numerals stay calm (`.primary`) until the limit actually needs
     /// attention — color in numbers means "act", not "brand".
     static func numeralColor(_ percent: Double) -> Color {

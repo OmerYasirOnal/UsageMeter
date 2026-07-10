@@ -1,15 +1,18 @@
+import AppKit
 import SwiftUI
 import UsageMeterKit
 
-/// The menu-bar item: a gauge glyph; when logged in it shows the live account
-/// session % (tinted by how close you are to the limit), otherwise optionally
-/// today's Claude Code cost. Tint falls back to the service-status color.
+/// The menu-bar item: a gauge glyph whose ring fills to the live account
+/// session % in the gauge-brand purple (escalating to amber/red as the limit
+/// nears); when logged out it's just the empty track, with today's Claude Code
+/// cost shown optionally. The "%" text's tint falls back to the service-status
+/// color.
 ///
-/// Note: the menu-bar label is rendered by AppKit as a *template image*, which
-/// only reliably reproduces `Text`/SF-Symbol `Image` — a live `Canvas` silently
-/// drops out and breaks the layout. `MenuBarGaugeRenderer` sidesteps this by
-/// pre-rendering the gauge to an `NSImage` (a real filling ring, not a static
-/// glyph) instead of drawing it live.
+/// Note: AppKit snapshots the menu-bar label to a static image, so a live
+/// `Canvas` silently drops out and breaks the layout. `MenuBarGaugeRenderer`
+/// sidesteps this by pre-rendering the gauge to a colored (non-template)
+/// `NSImage` — shown with `.renderingMode(.original)` so the purple survives the
+/// menu-bar tint — instead of drawing it live.
 struct MenuBarLabel: View {
     @ObservedObject var model: AppModel
     @Environment(\.openWindow) private var openWindow
@@ -20,8 +23,10 @@ struct MenuBarLabel: View {
             if DemoData.isEnabled {
                 Text("DEMO").font(.system(size: 10, weight: .bold, design: .rounded))
             }
-            Image(nsImage: MenuBarGaugeRenderer.render(percent: model.snapshot.account?.session?.percent))
-                .renderingMode(.template)
+            Image(nsImage: MenuBarGaugeRenderer.render(
+                percent: sessionPercent,
+                fillColor: NSColor(Theme.gaugeFillColor(sessionPercent ?? 0))))
+                .renderingMode(.original)
             if model.settings.showPercentInMenuBar, let session = model.snapshot.account?.session {
                 Text("\(session.displayPercent)%").monospacedDigit()
             } else if model.settings.showCostInMenuBar,
@@ -46,6 +51,10 @@ struct MenuBarLabel: View {
             }
         }
     }
+
+    /// Live account session %, or `nil` when logged out / local-only. Drives both
+    /// the gauge fill fraction and its color.
+    private var sessionPercent: Double? { model.snapshot.account?.session?.percent }
 
     /// Menu-bar color means "act now": template-neutral all day, warning/danger
     /// only when the session limit nears, status color only during an incident.
