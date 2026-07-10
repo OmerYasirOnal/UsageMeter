@@ -111,6 +111,19 @@ public struct DailyAggregator: @unchecked Sendable {
             }
             .sorted { ($0.day, $0.family.rawValue) < ($1.day, $1.family.rawValue) }
 
+        let projectModelUsages: [ProjectModelUsage] = byProjectFamily
+            .flatMap { projectID, families in
+                families.map { family, usage in
+                    ProjectModelUsage(
+                        projectID: projectID,
+                        displayName: ProjectName.display(forSlug: projectID),
+                        family: family,
+                        usage: usage,
+                        estimatedCost: calculator.cost(usage: usage, family: family))
+                }
+            }
+            .sorted { ($0.projectID, $0.family.rawValue) < ($1.projectID, $1.family.rawValue) }
+
         let blockBuilder = BlockBuilder(calculator: calculator)
         let activeBlock = blockBuilder.activeBlock(from: unique, now: now)
 
@@ -122,6 +135,7 @@ public struct DailyAggregator: @unchecked Sendable {
             byModel: modelUsages,
             byProject: projectUsages,
             byDay: dailyUsages,
+            byProjectModel: projectModelUsages,
             sessionCount: totalSessions,
             recordCount: unique.count,
             activeBlock: activeBlock,

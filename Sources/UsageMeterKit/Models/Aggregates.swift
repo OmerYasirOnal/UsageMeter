@@ -44,6 +44,30 @@ public struct ProjectUsage: Codable, Sendable, Equatable, Identifiable {
     }
 }
 
+/// Usage + estimated cost for one (project, model family) pair — the
+/// combined dimension "which model, in which project".
+public struct ProjectModelUsage: Codable, Sendable, Equatable {
+    public var projectID: String
+    public var displayName: String
+    public var family: ModelFamily
+    public var usage: TokenUsage
+    public var estimatedCost: Double?
+
+    public init(
+        projectID: String,
+        displayName: String,
+        family: ModelFamily,
+        usage: TokenUsage = .zero,
+        estimatedCost: Double? = nil
+    ) {
+        self.projectID = projectID
+        self.displayName = displayName
+        self.family = family
+        self.usage = usage
+        self.estimatedCost = estimatedCost
+    }
+}
+
 /// Usage for a single calendar day (used by the activity grid in M3 and "today").
 public struct DailyUsage: Codable, Sendable, Equatable, Identifiable {
     /// `yyyy-MM-dd` in the aggregator's calendar.
@@ -89,6 +113,9 @@ public struct ClaudeCodeStats: Codable, Sendable, Equatable {
     public var byModel: [ModelUsage]
     public var byProject: [ProjectUsage]
     public var byDay: [DailyUsage]
+    /// (Project, model family) pairs — all time (no per-day bucket is kept
+    /// for this triple; see docs/superpowers/specs/2026-07-10-project-model-analytics-design.md).
+    public var byProjectModel: [ProjectModelUsage]
 
     /// Distinct session files seen.
     public var sessionCount: Int
@@ -113,6 +140,7 @@ public struct ClaudeCodeStats: Codable, Sendable, Equatable {
         byModel: [ModelUsage] = [],
         byProject: [ProjectUsage] = [],
         byDay: [DailyUsage] = [],
+        byProjectModel: [ProjectModelUsage] = [],
         sessionCount: Int = 0,
         recordCount: Int = 0,
         activeBlock: UsageBlock? = nil,
@@ -126,6 +154,7 @@ public struct ClaudeCodeStats: Codable, Sendable, Equatable {
         self.byModel = byModel
         self.byProject = byProject
         self.byDay = byDay
+        self.byProjectModel = byProjectModel
         self.sessionCount = sessionCount
         self.recordCount = recordCount
         self.activeBlock = activeBlock

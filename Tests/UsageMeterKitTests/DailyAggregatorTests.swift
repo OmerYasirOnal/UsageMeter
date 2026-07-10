@@ -57,6 +57,22 @@ import Foundation
         #expect(projA?.usage.totalTokens == 40)
     }
 
+    @Test func groupsByProjectAndModel() {
+        let records = [
+            makeRecord(id: "1", model: "opus", at: "2026-06-30T10:00:00.000Z", project: "A", output: 10),
+            makeRecord(id: "2", model: "sonnet", at: "2026-06-30T10:00:00.000Z", project: "A", output: 20),
+            makeRecord(id: "3", model: "opus", at: "2026-06-29T10:00:00.000Z", project: "B", output: 30)
+        ]
+        let stats = makeAggregator().aggregate(records: records, now: TestTime.date("2026-06-30T12:00:00.000Z"))
+        #expect(stats.byProjectModel.count == 3)
+        let aOpus = stats.byProjectModel.first { $0.projectID == "A" && $0.family == .opus }
+        #expect(aOpus?.usage.totalTokens == 10)
+        let aSonnet = stats.byProjectModel.first { $0.projectID == "A" && $0.family == .sonnet }
+        #expect(aSonnet?.usage.totalTokens == 20)
+        let bOpus = stats.byProjectModel.first { $0.projectID == "B" && $0.family == .opus }
+        #expect(bOpus?.usage.totalTokens == 30)
+    }
+
     @Test func emptyRecordsProduceEmptyStats() {
         let stats = makeAggregator().aggregate(records: [], now: Date())
         #expect(stats.recordCount == 0)
