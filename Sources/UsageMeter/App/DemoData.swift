@@ -102,6 +102,23 @@ enum DemoData {
             project("infra-scripts", TokenUsage(cacheReadTokens: 60_000_000, outputTokens: 820_000), 9)
         ]
 
+        func projectModel(_ name: String, _ family: ModelFamily, _ u: TokenUsage) -> ProjectModelUsage {
+            ProjectModelUsage(projectID: name, displayName: name, family: family, usage: u,
+                              estimatedCost: calc.cost(usage: u, family: family))
+        }
+        let byProjectModel = [
+            projectModel("usage-meter", .opus, TokenUsage(cacheReadTokens: 620_000_000, outputTokens: 8_000_000)),
+            projectModel("usage-meter", .sonnet, TokenUsage(cacheReadTokens: 300_000_000, outputTokens: 3_500_000)),
+            projectModel("usage-meter", .haiku, TokenUsage(cacheReadTokens: 60_000_000, outputTokens: 500_000)),
+            projectModel("web-platform", .sonnet, TokenUsage(cacheReadTokens: 420_000_000, outputTokens: 5_200_000)),
+            projectModel("web-platform", .fable, TokenUsage(cacheReadTokens: 100_000_000, outputTokens: 1_200_000)),
+            projectModel("data-pipeline", .opus, TokenUsage(cacheReadTokens: 180_000_000, outputTokens: 2_400_000)),
+            projectModel("data-pipeline", .haiku, TokenUsage(cacheReadTokens: 60_000_000, outputTokens: 700_000)),
+            projectModel("ios-client", .sonnet, TokenUsage(cacheReadTokens: 90_000_000, outputTokens: 1_200_000)),
+            projectModel("ios-client", .mythos, TokenUsage(cacheReadTokens: 20_000_000, outputTokens: 300_000)),
+            projectModel("infra-scripts", .haiku, TokenUsage(cacheReadTokens: 60_000_000, outputTokens: 820_000))
+        ]
+
         return ClaudeCodeStats(
             total: total,
             totalEstimatedCost: calc.cost(usage: total, family: .opus),
@@ -110,6 +127,7 @@ enum DemoData {
             byModel: byModel,
             byProject: byProject,
             byDay: byDay,
+            byProjectModel: byProjectModel,
             sessionCount: 146,
             recordCount: 9_842,
             activeBlock: UsageBlock(start: now.addingTimeInterval(-1 * 3600),

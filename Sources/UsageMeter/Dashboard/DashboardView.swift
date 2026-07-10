@@ -48,6 +48,10 @@ struct DashboardView: View {
                 claudeCodeSummary
                 if !model.snapshot.claudeCode.byModel.isEmpty { byModelCard }
                 if !model.snapshot.claudeCode.byProject.isEmpty { byProjectCard }
+                if !model.snapshot.claudeCode.byProjectModel.isEmpty {
+                    ProjectModelMixCard(breakdown: DashboardMetrics.projectModelBreakdown(
+                        model.snapshot.claudeCode.byProjectModel))
+                }
                 TeamCard()
                 footer
             }
