@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import UsageMeterKit
 
 // MARK: - Adaptive color plumbing
 
@@ -102,6 +103,25 @@ enum Theme {
 
     static let corner: CGFloat = 12
     static let cardCorner: CGFloat = 14
+
+    /// Fixed-order categorical color for model-family IDENTITY (which model),
+    /// not magnitude — the one deliberate departure from Kiln's single data
+    /// hue. Order is fixed (ModelFamily's declared case order) and never
+    /// re-cycled by a bar's rank; validated for CVD-safe adjacency via the
+    /// dataviz skill's palette checker (worst all-pairs floor ~8-12 ΔE, legal
+    /// because segments always ship with a visible legend + hover tooltip —
+    /// never color-alone). See
+    /// docs/superpowers/specs/2026-07-10-project-model-analytics-design.md.
+    static func modelColor(_ family: ModelFamily) -> Color {
+        switch family {
+        case .opus: return Color(light: 0x2A78D6, dark: 0x3987E5)
+        case .sonnet: return Color(light: 0x1BAF7A, dark: 0x199E70)
+        case .haiku: return Color(light: 0xEDA100, dark: 0xC98500)
+        case .fable: return Color(light: 0xE87BA4, dark: 0xC1467A)
+        case .mythos: return Color(light: 0xEB6834, dark: 0xD95926)
+        case .unknown: return Color(nsColor: .systemGray)
+        }
+    }
 }
 
 /// User-selectable appearance (M3 deliverable).
