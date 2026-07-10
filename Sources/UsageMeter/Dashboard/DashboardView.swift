@@ -432,12 +432,17 @@ struct DashboardView: View {
 
     /// "Today runs 18% above your usual" / "12% below your usual" — plain
     /// comparison of today's weekday average against the overall average
-    /// across all seven weekdays. Nil when there's no usable baseline.
+    /// across the ACTIVE weekdays only (averageTokens > 0), so inactive days
+    /// (e.g. weekends for a developer tool) don't drag the baseline down and
+    /// make every active day look artificially "above usual". Nil when
+    /// there's no usable baseline.
     private func weekdayComparisonCaption(_ averages: [WeekdayAverage], todayWeekday: Int) -> String? {
         guard let todayAverage = averages.first(where: { $0.weekday == todayWeekday })?.averageTokens else {
             return nil
         }
-        let overall = Double(averages.reduce(0) { $0 + $1.averageTokens }) / Double(averages.count)
+        let activeAverages = averages.filter { $0.averageTokens > 0 }
+        guard !activeAverages.isEmpty else { return nil }
+        let overall = Double(activeAverages.reduce(0) { $0 + $1.averageTokens }) / Double(activeAverages.count)
         guard overall > 0 else { return nil }
         let diff = (Double(todayAverage) - overall) / overall * 100
         if abs(diff) < 5 { return "About your usual day" }
