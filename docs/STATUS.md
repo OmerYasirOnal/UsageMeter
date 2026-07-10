@@ -364,7 +364,11 @@ make xcodeproj  # generate the Xcode app target (needs XcodeGen)
    ever becomes a concern.
 2. ~~**Verify the Pages privacy URL is live.**~~ — ✅ **done 2026-07-09**: `https://omeryasironal.github.io/UsageMeter/privacy.html` returns 200.
 3. ~~**App icon**~~ — ✅ **done** (code-generated `gaugefill`; `make icon`).
-   Menu-bar glyph stays the SF Symbol gauge (Canvas can't render in a menu-bar label).
+   Menu-bar glyph is a code-rendered gauge ring (`MenuBarGaugeRenderer`) whose arc
+   fills to the live session % in the gauge-brand purple (amber ≥75%, red ≥90%) —
+   a colored, non-template `NSImage` shown `.renderingMode(.original)`. A live
+   `Canvas` still can't render in a menu-bar label (AppKit snapshots it), which is
+   why it's pre-rendered rather than drawn live.
 4. ~~**Notarize the GitHub download**~~ — ✅ **done 2026-07-02, shipped as v0.2.1.**
    Developer ID Application cert created (via the web portal with the CSR at
    `~/.appstoreconnect/developer_id/`; identity #4 in the login keychain, team
