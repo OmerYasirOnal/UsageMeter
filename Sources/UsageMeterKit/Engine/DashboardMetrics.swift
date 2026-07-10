@@ -61,6 +61,37 @@ public struct WeekdayAverage: Sendable, Equatable, Identifiable {
     }
 }
 
+/// One project's model mix — "which model, in which project" — with each
+/// segment's share of that project's total tokens.
+public struct ProjectBreakdown: Sendable, Equatable, Identifiable {
+    public struct Segment: Sendable, Equatable, Identifiable {
+        public let family: ModelFamily
+        public let tokens: Int
+        /// 0...100, this family's share of the project's total.
+        public let percent: Double
+        public var id: ModelFamily { family }
+
+        public init(family: ModelFamily, tokens: Int, percent: Double) {
+            self.family = family
+            self.tokens = tokens
+            self.percent = percent
+        }
+    }
+
+    public let projectID: String
+    public let displayName: String
+    public let totalTokens: Int
+    public let segments: [Segment]
+    public var id: String { projectID }
+
+    public init(projectID: String, displayName: String, totalTokens: Int, segments: [Segment]) {
+        self.projectID = projectID
+        self.displayName = displayName
+        self.totalTokens = totalTokens
+        self.segments = segments
+    }
+}
+
 /// Time window for the dashboard charts.
 public enum DashboardRange: Sendable, Equatable, CaseIterable {
     case days7, days30, days90, all
@@ -209,6 +240,37 @@ public enum DashboardMetrics {
             .map { ModelUsage(family: $0.key, usage: $0.value.usage,
                               estimatedCost: $0.value.anyCost ? $0.value.cost : nil) }
             .sorted { $0.usage.totalTokens > $1.usage.totalTokens }
+    }
+
+    /// "Which model, in which project" — all-time, top `topProjects` by total
+    /// tokens desc; each project's segments sorted by tokens desc with each
+    /// segment's percentage share of that project's total.
+    public static func projectModelBreakdown(
+        _ byProjectModel: [ProjectModelUsage], topProjects: Int = 8
+    ) -> [ProjectBreakdown] {
+        guard !byProjectModel.isEmpty else { return [] }
+        var byProject: [String: (displayName: String, tokensByFamily: [ModelFamily: Int])] = [:]
+        for entry in byProjectModel {
+            var bucket = byProject[entry.projectID] ?? (entry.displayName, [:])
+            bucket.tokensByFamily[entry.family, default: 0] += entry.usage.totalTokens
+            byProject[entry.projectID] = bucket
+        }
+        return byProject
+            .map { projectID, bucket -> ProjectBreakdown in
+                let total = bucket.tokensByFamily.values.reduce(0, +)
+                let segments = bucket.tokensByFamily
+                    .map { family, tokens in
+                        ProjectBreakdown.Segment(
+                            family: family, tokens: tokens,
+                            percent: total > 0 ? Double(tokens) / Double(total) * 100 : 0)
+                    }
+                    .sorted { $0.tokens > $1.tokens }
+                return ProjectBreakdown(projectID: projectID, displayName: bucket.displayName,
+                                        totalTokens: total, segments: segments)
+            }
+            .sorted { $0.totalTokens > $1.totalTokens }
+            .prefix(topProjects)
+            .map { $0 }
     }
 
     /// Statistically unusual (heavy) days: active days whose tokens exceed

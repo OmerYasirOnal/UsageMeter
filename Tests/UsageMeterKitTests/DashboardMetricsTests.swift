@@ -182,4 +182,40 @@ import Foundation
         #expect(monday.averageTokens == 200)
         #expect(averages.filter { $0.weekday != 2 }.allSatisfy { $0.averageTokens == 0 })
     }
+
+    // MARK: - Project × model breakdown
+
+    @Test func projectModelBreakdownComputesPercentagesAndSortOrder() {
+        let entries = [
+            ProjectModelUsage(projectID: "A", displayName: "Proj A", family: .opus,
+                              usage: TokenUsage(outputTokens: 300)),
+            ProjectModelUsage(projectID: "A", displayName: "Proj A", family: .sonnet,
+                              usage: TokenUsage(outputTokens: 100)),
+            ProjectModelUsage(projectID: "B", displayName: "Proj B", family: .haiku,
+                              usage: TokenUsage(outputTokens: 50))
+        ]
+        let breakdown = DashboardMetrics.projectModelBreakdown(entries)
+        #expect(breakdown.count == 2)
+        #expect(breakdown.first?.projectID == "A")   // A's total (400) > B's (50)
+        #expect(breakdown.first?.totalTokens == 400)
+        let segments = breakdown.first?.segments ?? []
+        #expect(segments.count == 2)
+        #expect(segments.first?.family == .opus)      // sorted desc by tokens
+        #expect(segments.first?.percent.rounded() == 75)   // 300/400
+        #expect(segments.last?.percent.rounded() == 25)    // 100/400
+    }
+
+    @Test func projectModelBreakdownTruncatesToTopProjects() {
+        let entries = (0..<10).map { i in
+            ProjectModelUsage(projectID: "P\(i)", displayName: "P\(i)", family: .opus,
+                              usage: TokenUsage(outputTokens: 100 - i))
+        }
+        let breakdown = DashboardMetrics.projectModelBreakdown(entries, topProjects: 3)
+        #expect(breakdown.count == 3)
+        #expect(breakdown.map { $0.projectID } == ["P0", "P1", "P2"])
+    }
+
+    @Test func projectModelBreakdownEmptyForNoData() {
+        #expect(DashboardMetrics.projectModelBreakdown([]).isEmpty)
+    }
 }
